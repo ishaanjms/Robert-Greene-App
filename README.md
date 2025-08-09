@@ -1,4 +1,4 @@
-# Firebase Studio
+# Greene's Counsel
 
 https://robert-greene-app.vercel.app/
 GO, INTERACT and HAVE FUN!!
