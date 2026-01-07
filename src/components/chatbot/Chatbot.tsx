@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MessageBubble from './MessageBubble';
 import { getPhilosophicalGuidance, type PhilosophicalGuidanceInput } from '@/ai/flows/philosophical-guidance';
-import { BrainCircuit, Send, Bot, Menu, SlidersHorizontal, Layers } from 'lucide-react';
+import { BrainCircuit, Send, Menu, SlidersHorizontal, Layers } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -44,6 +44,7 @@ export default function Chatbot() {
   const [currentTone, setCurrentTone] = useState<ChatbotTone>('classic');
   const [currentDepthMode, setCurrentDepthMode] = useState<ChatbotDepthMode>('philosophical');
   const [isClientInitialized, setIsClientInitialized] = useState(false);
+  const [conversationContext, setConversationContext] = useState<string>('Awaiting topic');
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -303,6 +304,30 @@ export default function Chatbot() {
     }
   };
 
+  const capitalizeFirstWord = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return trimmed;
+    return trimmed.replace(/^(\p{L})(.*)$/u, (_, first, rest) => `${first.toUpperCase()}${rest}`);
+  };
+
+  const formatContextText = (text: string) => {
+    const words = text.split(/\s+/).filter(Boolean);
+    const maxWords = 4; // keep between 2-4 words
+    const base = words.length <= maxWords ? text : `${words.slice(0, maxWords).join(' ')}...`;
+    return capitalizeFirstWord(base);
+  };
+
+  // Lock the conversation context to the first meaningful (>=3 words) user message.
+  useEffect(() => {
+    if (conversationContext !== 'Awaiting topic') return; // already set, do not change
+    const firstMeaningfulUser = messages.find(
+      (msg) => msg.sender === 'user' && typeof msg.text === 'string' && msg.text.trim().split(/\s+/).filter(Boolean).length >= 3
+    );
+    if (firstMeaningfulUser?.text) {
+      setConversationContext(formatContextText(firstMeaningfulUser.text.trim()));
+    }
+  }, [messages, conversationContext]);
+
   if (!isClientInitialized) {
     return (
       <div className="flex flex-col h-screen w-full bg-background text-foreground overflow-hidden items-center justify-center">
@@ -324,9 +349,17 @@ export default function Chatbot() {
               <Menu size={isMobile ? 20 : 22} />
             </SidebarTrigger>
           )}
-          <Bot size={isMobile ? 20 : 24} className="text-primary" />
-          <h1 className={cn("font-serif text-foreground", isMobile ? "text-base" : "text-lg", "font-['Merriweather_Bold']", "font-bold")}>
-            Greene's Counsel
+          <h1
+            className={cn(
+              "font-serif text-muted-foreground",
+              isMobile ? "text-base" : "text-lg",
+              "font-['Merriweather_Bold']",
+              "font-bold",
+              "truncate",
+            )}
+            title={conversationContext}
+          >
+            {conversationContext}
           </h1>
         </div>
         <div className="flex items-center space-x-1 sm:space-x-2">
