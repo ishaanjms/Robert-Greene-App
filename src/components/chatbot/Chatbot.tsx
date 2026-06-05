@@ -330,30 +330,39 @@ export default function Chatbot() {
 
   if (!isClientInitialized) {
     return (
-      <div className="flex flex-col h-screen w-full bg-background text-foreground overflow-hidden items-center justify-center">
-        <BrainCircuit className="animate-pulse text-primary" size={48} />
-        <p className="mt-4 text-muted-foreground">Initializing Counsel...</p>
+      <div className="app-shell-bg flex h-screen w-full flex-col items-center justify-center overflow-hidden text-foreground">
+        <div className="flex h-14 w-14 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary shadow-lg shadow-primary/10">
+          <BrainCircuit className="animate-pulse" size={30} />
+        </div>
+        <p className="mt-4 text-sm text-muted-foreground">Initializing Counsel...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-background text-foreground overflow-hidden">
-      <header className="p-3 sm:p-4 border-b border-border flex items-center justify-between shrink-0 bg-background">
-        <div className="flex items-center space-x-2 sm:space-x-3">
+    <div className="app-shell-bg flex h-screen w-full flex-col overflow-hidden text-foreground">
+      <header className="surface-glass flex shrink-0 items-center justify-between gap-3 border-b border-border/70 px-3 py-3 sm:px-5">
+        <div className="flex min-w-0 items-center space-x-2 sm:space-x-3">
           {isMobile && (
             <SidebarTrigger
-              className="text-foreground hover:text-primary p-1.5 rounded-md hover:bg-muted -ml-1"
+              className="-ml-1 rounded-md p-1.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
               aria-label="Open navigation menu"
             >
               <Menu size={isMobile ? 20 : 22} />
             </SidebarTrigger>
           )}
+          <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary sm:flex">
+            <BrainCircuit size={18} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_12px_hsl(var(--accent)/0.65)]" />
+              <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Current counsel</span>
+            </div>
           <h1
             className={cn(
-              "font-serif text-muted-foreground",
+              "font-serif text-foreground",
               isMobile ? "text-base" : "text-lg",
-              "font-['Merriweather_Bold']",
               "font-bold",
               "truncate",
             )}
@@ -361,14 +370,15 @@ export default function Chatbot() {
           >
             {conversationContext}
           </h1>
+          </div>
         </div>
-        <div className="flex items-center space-x-1 sm:space-x-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <Select value={currentTone} onValueChange={(value: ChatbotTone) => handleToneChange(value)}>
             <SelectTrigger
-              className="w-auto h-9 px-2 sm:px-2.5 py-1.5 border-0 hover:bg-muted focus:ring-1 focus:ring-primary focus-visible:ring-1 focus-visible:ring-primary text-xs sm:text-sm text-muted-foreground hover:text-foreground [&_svg]:ml-1 [&_svg]:sm:ml-1.5"
+              className="h-9 w-[4.75rem] rounded-md border border-border/70 bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus:ring-1 focus:ring-primary focus-visible:ring-1 focus-visible:ring-primary sm:w-auto sm:px-2.5 sm:text-sm [&_svg]:ml-1 [&_svg]:sm:ml-1.5"
               aria-label="Select response tone"
             >
-              <SlidersHorizontal size={isMobile ? 14 : 16} className="mr-1 sm:mr-1.5 text-muted-foreground group-hover:text-foreground" />
+              <SlidersHorizontal size={isMobile ? 14 : 16} className="mr-1 text-muted-foreground sm:mr-1.5" />
               <SelectValue placeholder="Select tone" />
             </SelectTrigger>
             <SelectContent>
@@ -382,10 +392,10 @@ export default function Chatbot() {
 
           <Select value={currentDepthMode} onValueChange={(value: ChatbotDepthMode) => handleDepthModeChange(value)}>
             <SelectTrigger
-              className="w-auto h-9 px-2 sm:px-2.5 py-1.5 border-0 hover:bg-muted focus:ring-1 focus:ring-primary focus-visible:ring-1 focus-visible:ring-primary text-xs sm:text-sm text-muted-foreground hover:text-foreground [&_svg]:ml-1 [&_svg]:sm:ml-1.5"
+              className="h-9 w-[5.25rem] rounded-md border border-border/70 bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus:ring-1 focus:ring-primary focus-visible:ring-1 focus-visible:ring-primary sm:w-auto sm:px-2.5 sm:text-sm [&_svg]:ml-1 [&_svg]:sm:ml-1.5"
               aria-label="Select knowledge depth"
             >
-              <Layers size={isMobile ? 14 : 16} className="mr-1 sm:mr-1.5 text-muted-foreground group-hover:text-foreground" />
+              <Layers size={isMobile ? 14 : 16} className="mr-1 text-muted-foreground sm:mr-1.5" />
               <SelectValue placeholder="Select depth" />
             </SelectTrigger>
             <SelectContent>
@@ -400,14 +410,14 @@ export default function Chatbot() {
         </div>
       </header>
 
-      <ScrollArea className="flex-grow p-3 sm:p-4" ref={scrollAreaRef}>
-        <div className="max-w-3xl mx-auto w-full">
+      <ScrollArea className="flex-grow px-3 py-4 sm:px-5 sm:py-6" ref={scrollAreaRef}>
+        <div className="mx-auto w-full max-w-3xl">
           {messages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} />
           ))}
           {isLoading && !messages.some(msg => msg.isTyping && msg.sender === 'bot') && ( 
             <div className="flex justify-center py-4">
-              <div className="flex items-center space-x-2 p-2 text-sm text-muted-foreground bg-muted rounded-lg">
+              <div className="flex items-center space-x-2 rounded-md border border-border/70 bg-muted/70 px-3 py-2 text-sm text-muted-foreground shadow-sm">
                 <BrainCircuit className="animate-pulse" size={16} />
                 <span>Robert Greene is contemplating...</span>
               </div>
@@ -416,23 +426,23 @@ export default function Chatbot() {
         </div>
       </ScrollArea>
 
-      <footer className="p-2 sm:p-3 border-t border-border bg-background shrink-0">
-        <div className="max-w-3xl mx-auto">
-          <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
+      <footer className="surface-glass shrink-0 border-t border-border/70 px-3 py-3 sm:px-5 sm:py-4">
+        <div className="mx-auto max-w-3xl">
+          <form onSubmit={handleSubmit} className="flex w-full items-center gap-2 rounded-full border border-border/80 bg-card/80 p-1.5 shadow-lg shadow-black/20">
             <Input
               ref={inputRef}
               type="text"
               placeholder="Describe your situation..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              className="flex-grow h-12 bg-muted text-foreground placeholder:text-muted-foreground/80 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 border-0 shadow-sm rounded-full px-4 text-base"
+              className="h-11 flex-grow rounded-full border-0 bg-transparent px-3 text-base text-foreground shadow-none placeholder:text-muted-foreground/80 focus-visible:ring-0 focus-visible:ring-offset-0"
               disabled={isLoading || messages.some(msg => msg.isTyping)} 
               aria-label="Chat input"
             />
             <Button
               type="submit"
               size="icon"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground rounded-full w-10 h-10 sm:w-12 sm:h-12 shrink-0"
+              className="h-10 w-10 shrink-0 rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/20 transition-transform hover:bg-primary/90 active:scale-95 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:h-11 sm:w-11"
               disabled={isLoading || !inputValue.trim() || messages.some(msg => msg.isTyping)} 
               aria-label="Send message"
             >

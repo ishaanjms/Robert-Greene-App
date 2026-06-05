@@ -4,37 +4,38 @@
 
 body {
   font-family: var(--font-open-sans), Arial, Helvetica, sans-serif;
+  font-feature-settings: "kern";
 }
 
 @layer base {
   :root {
-    --background: 0 0% 7%;    /* Deep Charcoal / Near Black (e.g., #121212) */
-    --foreground: 0 0% 90%;   /* Light Gray for text (e.g., #E6E6E6) */
+    --background: 220 16% 8%;
+    --foreground: 36 18% 92%;
 
-    --card: 0 0% 11%;          /* Charcoal Black - slightly lighter than background (e.g., #1C1C1C) */
-    --card-foreground: 0 0% 85%; /* Light Gray - General text in card */
+    --card: 220 13% 12%;
+    --card-foreground: 36 16% 89%;
 
-    --popover: 0 0% 11%;       /* Consistent with card */
-    --popover-foreground: 0 0% 85%;
+    --popover: 220 13% 12%;
+    --popover-foreground: 36 16% 89%;
 
-    --primary: 348 83% 47%;     /* Crimson Red - e.g., Send button */
-    --primary-foreground: 0 0% 98%; /* White text on Crimson Red */
+    --primary: 350 72% 50%;
+    --primary-foreground: 36 30% 96%;
 
-    --secondary: 0 0% 16%;       /* Dark Gray - e.g., User message bubble BG if not primary */
-    --secondary-foreground: 0 0% 80%; /* Light gray text on secondary */
+    --secondary: 218 11% 17%;
+    --secondary-foreground: 35 14% 85%;
 
-    --muted: 0 0% 13%;          /* Slightly different dark gray - e.g., Bot message bubble BG or subtle elements */
-    --muted-foreground: 0 0% 75%;  /* Text on muted */
+    --muted: 218 12% 15%;
+    --muted-foreground: 35 11% 69%;
 
-    --accent: 348 83% 47%;      /* Crimson Red - Other accents */
-    --accent-foreground: 0 0% 98%;
+    --accent: 42 47% 56%;
+    --accent-foreground: 220 18% 9%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 20%;         /* Borders within components, slightly lighter than card/muted */
-    --input: 0 0% 16%;          /* Input field background, distinguishable from main background */
-    --ring: 348 83% 57%;        /* Crimson-based ring for focus */
+    --border: 218 10% 22%;
+    --input: 218 12% 16%;
+    --ring: 350 72% 58%;
 
     --radius: 0.5rem;
 
@@ -44,38 +45,36 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    /* Sidebar variables updated to match app theme */
-    --sidebar-background: 0 0% 11%; /* Charcoal Black (same as card) */
-    --sidebar-foreground: 0 0% 85%;  /* Light Gray (same as card-foreground) */
-    --sidebar-primary: 348 83% 47%;   /* Crimson Red for active items */
-    --sidebar-primary-foreground: 0 0% 98%; /* White text on Crimson */
-    --sidebar-accent: 348 83% 40%;    /* Slightly darker Crimson for hover */
-    --sidebar-accent-foreground: 0 0% 98%; /* White text on Crimson hover */
-    --sidebar-border: 0 0% 18%;       /* Dark Gray border for sidebar */
-    --sidebar-ring: 348 83% 57%;      /* Crimson-based ring */
+    --sidebar-background: 220 14% 10%;
+    --sidebar-foreground: 36 16% 86%;
+    --sidebar-primary: 350 72% 50%;
+    --sidebar-primary-foreground: 36 30% 96%;
+    --sidebar-accent: 218 12% 16%;
+    --sidebar-accent-foreground: 36 16% 91%;
+    --sidebar-border: 218 10% 20%;
+    --sidebar-ring: 350 72% 58%;
   }
 
   .dark {
-    /* The design is dark by default, so .dark vars are same as :root */
-    --background: 0 0% 7%;
-    --foreground: 0 0% 90%;
-    --card: 0 0% 11%;
-    --card-foreground: 0 0% 85%;
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 85%;
-    --primary: 348 83% 47%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 16%;
-    --secondary-foreground: 0 0% 80%;
-    --muted: 0 0% 13%;
-    --muted-foreground: 0 0% 75%;
-    --accent: 348 83% 47%;
-    --accent-foreground: 0 0% 98%;
+    --background: 220 16% 8%;
+    --foreground: 36 18% 92%;
+    --card: 220 13% 12%;
+    --card-foreground: 36 16% 89%;
+    --popover: 220 13% 12%;
+    --popover-foreground: 36 16% 89%;
+    --primary: 350 72% 50%;
+    --primary-foreground: 36 30% 96%;
+    --secondary: 218 11% 17%;
+    --secondary-foreground: 35 14% 85%;
+    --muted: 218 12% 15%;
+    --muted-foreground: 35 11% 69%;
+    --accent: 42 47% 56%;
+    --accent-foreground: 220 18% 9%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 20%;
-    --input: 0 0% 16%;
-    --ring: 348 83% 57%;
+    --border: 218 10% 22%;
+    --input: 218 12% 16%;
+    --ring: 350 72% 58%;
     
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -83,14 +82,14 @@ body {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    --sidebar-background: 0 0% 11%;
-    --sidebar-foreground: 0 0% 85%;
-    --sidebar-primary: 348 83% 47%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 348 83% 40%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 348 83% 57%;
+    --sidebar-background: 220 14% 10%;
+    --sidebar-foreground: 36 16% 86%;
+    --sidebar-primary: 350 72% 50%;
+    --sidebar-primary-foreground: 36 30% 96%;
+    --sidebar-accent: 218 12% 16%;
+    --sidebar-accent-foreground: 36 16% 91%;
+    --sidebar-border: 218 10% 20%;
+    --sidebar-ring: 350 72% 58%;
   }
 }
 
@@ -100,5 +99,18 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .app-shell-bg {
+    background:
+      radial-gradient(circle at 20% 0%, hsl(350 72% 18% / 0.16), transparent 30rem),
+      linear-gradient(180deg, hsl(var(--background)), hsl(220 16% 7%));
+  }
+
+  .surface-glass {
+    background-color: hsl(var(--background) / 0.82);
+    backdrop-filter: blur(14px);
   }
 }

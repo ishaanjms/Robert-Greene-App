@@ -12,7 +12,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { PlusCircle, ChevronsLeft, ChevronsRight, Bot } from "lucide-react"; // Added Bot for potential logo
+import { PlusCircle, ChevronsLeft, ChevronsRight, Bot, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CONVERSATION_HISTORY_STORAGE_KEY } from '@/components/chatbot/Chatbot';
 
@@ -30,12 +30,18 @@ export default function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar" className="border-r border-sidebar-border">
-      <SidebarHeader className="p-2 mt-2">
-        {/* Example: Logo/Title area */}
-          <div className={cn("flex items-center gap-2 px-2 h-8", !open && "justify-center")}>
-            <Bot size={20} className="text-primary shrink-0" />
-            {open && <span className="font-serif text-sm font-medium text-sidebar-foreground truncate">Greene's Counsel</span>}
+    <Sidebar collapsible="icon" variant="sidebar" className="border-r border-sidebar-border bg-sidebar/95">
+      <SidebarHeader className="px-2 pb-3 pt-4">
+          <div className={cn("flex items-center gap-2 rounded-md px-2 py-2", !open && "justify-center px-0")}>
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary shadow-sm">
+              <Bot size={18} />
+            </div>
+            {open && (
+              <div className="min-w-0">
+                <span className="block truncate font-serif text-sm font-bold text-sidebar-foreground">Greene's Counsel</span>
+                <span className="block truncate text-[11px] text-sidebar-foreground/55">Strategic advisory</span>
+              </div>
+            )}
           </div> 
       </SidebarHeader>
       <SidebarContent className="flex-grow p-2">
@@ -45,7 +51,7 @@ export default function AppSidebar() {
               onClick={handleNewChat}
               tooltip={{ children: "Start a New Chat", side: "right", align:"center", className:"bg-card text-card-foreground border-border" }}
               className={cn(
-                "justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring",
+                "h-10 justify-start rounded-md text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring",
                  !open && "justify-center"
               )}
               aria-label="Start a New Chat"
@@ -54,7 +60,17 @@ export default function AppSidebar() {
               {open && <span className="ml-2">New Chat</span>}
             </SidebarMenuButton>
           </SidebarMenuItem>
-          {/* Future sidebar items like chat history can be added here */}
+          {open && (
+            <SidebarMenuItem>
+              <div className="mt-4 rounded-md border border-sidebar-border/80 bg-background/35 p-3 text-xs leading-relaxed text-sidebar-foreground/65">
+                <div className="mb-1 flex items-center gap-1.5 font-medium text-sidebar-foreground/85">
+                  <Sparkles size={13} className="text-accent" />
+                  Counsel mode
+                </div>
+                Ask for strategy, power dynamics, persuasion, or conflict analysis.
+              </div>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2">
@@ -62,7 +78,7 @@ export default function AppSidebar() {
           onClick={toggleSidebar}
           tooltip={{ children: open ? "Collapse Sidebar" : "Expand Sidebar", side: "right", align: "center", className:"bg-card text-card-foreground border-border" }}
           className={cn(
-            "justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring",
+            "h-10 justify-start rounded-md text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring",
             !open && "justify-center"
           )}
           aria-label={open ? "Collapse Sidebar" : "Expand Sidebar"}
