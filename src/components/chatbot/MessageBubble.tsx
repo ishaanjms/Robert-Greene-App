@@ -23,24 +23,26 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       )}
     >
       {!isUser && (
-        <Avatar className="h-8 w-8 shrink-0 border border-border/80 shadow-sm sm:h-9 sm:w-9">
-          <AvatarFallback className="bg-primary/10 text-primary">
+        <Avatar className="h-8 w-8 shrink-0 border border-white/15 shadow-sm sm:h-9 sm:w-9">
+          <AvatarFallback className="bg-white/10 text-primary">
             <BrainCircuit size={18} />
           </AvatarFallback>
         </Avatar>
       )}
       <div
         className={cn(
-          'max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm sm:max-w-[72%] sm:px-4 sm:py-3 sm:text-base', 
+          'max-w-[82%] px-4 py-3 text-sm leading-relaxed shadow-xl sm:max-w-[76%] sm:px-6 sm:py-4 sm:text-base', 
           isUser
-            ? 'rounded-br-md bg-primary text-primary-foreground shadow-primary/10' 
-            : 'rounded-bl-md border border-border/70 bg-card/90 text-card-foreground' 
+            ? 'rounded-[1.75rem] rounded-br-lg border border-white/10 bg-white/10 text-foreground shadow-black/20' 
+            : 'cream-surface rounded-[1.75rem] rounded-bl-lg border border-black/5 shadow-black/20' 
         )}
       >
         <ReactMarkdown
           className={cn(
-            "prose prose-sm max-w-none sm:prose-base dark:prose-invert prose-p:my-0 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-strong:text-inherit",
-            isUser ? "prose-a:text-primary-foreground" : "prose-a:text-accent"
+            "prose prose-sm max-w-none sm:prose-base prose-p:my-0 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-strong:text-inherit",
+            isUser
+              ? "dark:prose-invert prose-a:text-primary"
+              : "prose-neutral prose-a:text-stone-700"
           )}
           remarkPlugins={[remarkGfm]}
           // You can customize components if needed, e.g., for links or images
@@ -52,8 +54,8 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         </ReactMarkdown>
       </div>
       {isUser && (
-        <Avatar className="h-8 w-8 shrink-0 border border-border/80 shadow-sm sm:h-9 sm:w-9">
-          <AvatarFallback className="bg-secondary text-secondary-foreground">
+        <Avatar className="h-8 w-8 shrink-0 border border-white/15 shadow-sm sm:h-9 sm:w-9">
+          <AvatarFallback className="bg-white/10 text-secondary-foreground">
             <User size={18} />
           </AvatarFallback>
         </Avatar>
