@@ -407,7 +407,7 @@ export default function Chatbot() {
       </header>
 
       <ScrollArea className="flex-grow px-3 py-5 sm:px-5 sm:py-8" ref={scrollAreaRef}>
-        <div className="mx-auto w-full max-w-3xl rounded-[2rem] border border-white/10 bg-black/20 px-3 py-4 shadow-2xl shadow-black/25 backdrop-blur-sm sm:px-6 sm:py-6">
+        <div className="mx-auto w-full max-w-3xl px-1 py-2 sm:px-4 sm:py-4">
           {messages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} />
           ))}

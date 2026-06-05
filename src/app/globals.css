@@ -105,12 +105,9 @@ body {
 @layer utilities {
   .app-shell-bg {
     background:
-      radial-gradient(circle at 22% 18%, hsl(39 28% 33% / 0.28), transparent 28rem),
-      radial-gradient(circle at 88% 82%, hsl(185 26% 24% / 0.18), transparent 24rem),
-      linear-gradient(hsl(42 8% 42% / 0.12) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(42 8% 42% / 0.12) 1px, transparent 1px),
+      radial-gradient(circle at 24% 18%, hsl(39 22% 26% / 0.24), transparent 28rem),
+      radial-gradient(circle at 92% 82%, hsl(185 18% 18% / 0.14), transparent 24rem),
       linear-gradient(180deg, hsl(42 7% 10%), hsl(45 7% 6%));
-    background-size: auto, auto, 7.5rem 7.5rem, 7.5rem 7.5rem, auto;
   }
 
   .surface-glass {
@@ -120,8 +117,8 @@ body {
 
   .cream-surface {
     background:
-      radial-gradient(circle at 15% 12%, hsl(38 45% 96% / 0.95), transparent 24rem),
-      hsl(38 30% 91%);
-    color: hsl(45 8% 9%);
+      radial-gradient(circle at 16% 10%, hsl(40 25% 86% / 0.42), transparent 20rem),
+      hsl(38 18% 78%);
+    color: hsl(42 8% 22%);
   }
 }

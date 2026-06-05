@@ -31,10 +31,10 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       )}
       <div
         className={cn(
-          'max-w-[82%] px-4 py-3 text-sm leading-relaxed shadow-xl sm:max-w-[76%] sm:px-6 sm:py-4 sm:text-base', 
+          'max-w-[82%] px-4 py-3 text-sm leading-relaxed shadow-lg sm:max-w-[76%] sm:px-6 sm:py-4 sm:text-base', 
           isUser
             ? 'rounded-[1.75rem] rounded-br-lg border border-white/10 bg-white/10 text-foreground shadow-black/20' 
-            : 'cream-surface rounded-[1.75rem] rounded-bl-lg border border-black/5 shadow-black/20' 
+            : 'cream-surface rounded-[1.75rem] rounded-bl-lg border border-white/10 shadow-black/15' 
         )}
       >
         <ReactMarkdown
