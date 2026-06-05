@@ -355,30 +355,26 @@ export default function Chatbot() {
             <BrainCircuit size={18} />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_12px_hsl(var(--accent)/0.65)]" />
-              <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Current counsel</span>
-            </div>
-          <h1
-            className={cn(
-              "font-serif text-foreground",
-              isMobile ? "text-base" : "text-lg",
-              "font-bold",
-              "truncate",
-            )}
-            title={conversationContext}
-          >
-            {conversationContext}
-          </h1>
+            <h1
+              className={cn(
+                "font-serif text-foreground",
+                isMobile ? "text-base" : "text-lg",
+                "font-bold",
+                "truncate",
+              )}
+              title={conversationContext}
+            >
+              {conversationContext}
+            </h1>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <Select value={currentTone} onValueChange={(value: ChatbotTone) => handleToneChange(value)}>
             <SelectTrigger
-              className="h-9 w-[4.75rem] rounded-md border border-border/70 bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus:ring-1 focus:ring-primary focus-visible:ring-1 focus-visible:ring-primary sm:w-auto sm:px-2.5 sm:text-sm [&_svg]:ml-1 [&_svg]:sm:ml-1.5"
+              className="h-9 w-9 rounded-md border border-border/70 bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus:ring-1 focus:ring-primary focus-visible:ring-1 focus-visible:ring-primary sm:w-auto sm:px-2.5 sm:text-sm [&>span]:hidden sm:[&>span]:inline-flex [&_svg]:ml-0 [&_svg]:sm:ml-1.5"
               aria-label="Select response tone"
             >
-              <SlidersHorizontal size={isMobile ? 14 : 16} className="mr-1 text-muted-foreground sm:mr-1.5" />
+              <SlidersHorizontal size={isMobile ? 14 : 16} className="text-muted-foreground sm:mr-1.5" />
               <SelectValue placeholder="Select tone" />
             </SelectTrigger>
             <SelectContent>
@@ -392,10 +388,10 @@ export default function Chatbot() {
 
           <Select value={currentDepthMode} onValueChange={(value: ChatbotDepthMode) => handleDepthModeChange(value)}>
             <SelectTrigger
-              className="h-9 w-[5.25rem] rounded-md border border-border/70 bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus:ring-1 focus:ring-primary focus-visible:ring-1 focus-visible:ring-primary sm:w-auto sm:px-2.5 sm:text-sm [&_svg]:ml-1 [&_svg]:sm:ml-1.5"
+              className="h-9 w-9 rounded-md border border-border/70 bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus:ring-1 focus:ring-primary focus-visible:ring-1 focus-visible:ring-primary sm:w-auto sm:px-2.5 sm:text-sm [&>span]:hidden sm:[&>span]:inline-flex [&_svg]:ml-0 [&_svg]:sm:ml-1.5"
               aria-label="Select knowledge depth"
             >
-              <Layers size={isMobile ? 14 : 16} className="mr-1 text-muted-foreground sm:mr-1.5" />
+              <Layers size={isMobile ? 14 : 16} className="text-muted-foreground sm:mr-1.5" />
               <SelectValue placeholder="Select depth" />
             </SelectTrigger>
             <SelectContent>

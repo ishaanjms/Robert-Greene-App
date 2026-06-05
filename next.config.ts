@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
+  devIndicators: {
+    position: 'top-right',
   },
   images: {
     remotePatterns: [
