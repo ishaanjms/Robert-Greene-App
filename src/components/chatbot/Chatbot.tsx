@@ -38,6 +38,22 @@ const TONE_STORAGE_KEY = 'greeneCounselTonePreference';
 const DEPTH_MODE_STORAGE_KEY = 'greeneCounselDepthPreference';
 export const CONVERSATION_HISTORY_STORAGE_KEY = 'greeneCounselConversationHistory';
 const TYPING_SPEED_MS = 2; // Milliseconds per character
+const QUOTE_ROTATION_MS = 4200;
+const LOADING_QUOTES: Array<{ author: string; text: string }> = [
+  { author: 'Sun Tzu', text: 'All warfare is based on deception.' },
+  { author: 'Voltaire', text: 'Lord, protect me from my friends; I can take care of my enemies.' },
+  { author: 'Miyamoto Musashi', text: 'Think lightly of yourself and deeply of the world.' },
+  { author: 'Seneca', text: 'We suffer more often in imagination than in reality.' },
+  { author: 'Heraclitus', text: 'Everything flows.' },
+  { author: 'Lord Chesterfield', text: 'Be wiser than other people if you can; but do not tell them so.' },
+  { author: 'Thucydides', text: 'The strong do what they can and the weak suffer what they must.' },
+  { author: 'Ovid', text: 'Let your hook always be cast; in the pool where you least expect it, there will be a fish.' },
+  { author: 'Anton Chekhov', text: 'Man will become better when you show him what he is like.' },
+  { author: 'Carl Jung', text: 'Knowing your own darkness is the best method for dealing with the darknesses of other people.' },
+  { author: 'Arthur Schopenhauer', text: 'We forfeit three-fourths of ourselves in order to be like other people.' },
+  { author: 'Friedrich Nietzsche', text: 'He who has a why to live for can bear almost any how.' },
+  { author: 'Blaise Pascal', text: "All of humanity's problems stem from man's inability to sit quietly in a room alone." },
+];
 
 const isChatbotTone = (value: unknown): value is ChatbotTone => value === 'classic' || value === 'modern';
 const isChatbotDepthMode = (value: unknown): value is ChatbotDepthMode =>
@@ -58,6 +74,7 @@ export default function Chatbot() {
   const [currentDepthMode, setCurrentDepthMode] = useState<ChatbotDepthMode>('philosophical');
   const [isClientInitialized, setIsClientInitialized] = useState(false);
   const [conversationContext, setConversationContext] = useState<string>('Awaiting topic');
+  const [activeQuoteIndex, setActiveQuoteIndex] = useState(0);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -311,6 +328,18 @@ export default function Chatbot() {
   const hasTypingMessage = messages.some(msg => msg.isTyping);
   const isInputDisabled = isLoading || hasTypingMessage;
   const isConversationEmpty = messages.length === 0;
+  const activeQuote = LOADING_QUOTES[activeQuoteIndex % LOADING_QUOTES.length];
+
+  useEffect(() => {
+    if (!isLoading || hasTypingMessage) return;
+
+    setActiveQuoteIndex(Math.floor(Math.random() * LOADING_QUOTES.length));
+    const intervalId = window.setInterval(() => {
+      setActiveQuoteIndex(index => (index + 1) % LOADING_QUOTES.length);
+    }, QUOTE_ROTATION_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [isLoading, hasTypingMessage]);
 
   const renderComposer = (placement: 'center' | 'footer') => (
     <form
@@ -439,9 +468,17 @@ export default function Chatbot() {
               ))}
               {isLoading && !messages.some(msg => msg.isTyping && msg.sender === 'bot') && (
                 <div className="flex justify-center py-4">
-                  <div className="flex items-center space-x-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-muted-foreground shadow-sm">
-                    <BrainCircuit className="animate-pulse" size={16} />
-                    <span>Robert Greene is contemplating...</span>
+                  <div className="max-w-xl rounded-3xl border border-white/10 bg-white/[0.07] px-5 py-4 text-center shadow-lg shadow-black/10 backdrop-blur-sm">
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <BrainCircuit className="animate-pulse" size={16} />
+                      <span>Robert Greene is contemplating...</span>
+                    </div>
+                    <blockquote className="mt-3 text-sm leading-relaxed text-foreground/75">
+                      "{activeQuote.text}"
+                    </blockquote>
+                    <div className="mt-2 text-[11px] text-muted-foreground/70">
+                      {activeQuote.author}
+                    </div>
                   </div>
                 </div>
               )}
