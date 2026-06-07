@@ -425,7 +425,7 @@ export default function Chatbot() {
         <main className="flex flex-grow items-center justify-center px-4 pb-20">
           <div className="w-full max-w-3xl">
             <div className="mb-7 text-center">
-              <h2 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">What are you navigating?</h2>
+              <h2 className="text-3xl font-normal text-foreground sm:text-4xl">What are you navigating?</h2>
             </div>
             {renderComposer('center')}
           </div>
