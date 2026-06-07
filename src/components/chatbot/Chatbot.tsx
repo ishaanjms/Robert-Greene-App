@@ -345,7 +345,7 @@ export default function Chatbot() {
     <form
       onSubmit={handleSubmit}
       className={cn(
-        "flex w-full items-center gap-2 rounded-full border border-white/10 bg-black/25 p-1.5 shadow-2xl shadow-black/25 backdrop-blur-md",
+        "composer-focus-glow flex w-full items-center gap-2 rounded-full border border-white/10 bg-black/25 p-1.5 shadow-2xl shadow-black/25 backdrop-blur-md",
         placement === 'center' && "bg-black/30"
       )}
     >
