@@ -68,7 +68,6 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         </ReactMarkdown>
         {shouldShowMode && (
           <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] leading-none text-stone-700/55">
-            <span className="mr-0.5">Used</span>
             <span className="rounded-full bg-black/5 px-2 py-1">{toneLabel}</span>
             <span className="rounded-full bg-black/5 px-2 py-1">{depthLabel}</span>
           </div>
