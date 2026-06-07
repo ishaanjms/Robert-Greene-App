@@ -25,6 +25,8 @@ export interface Message {
   id: string;
   text: string;
   sender: 'user' | 'bot';
+  tone?: ChatbotTone;
+  depthMode?: ChatbotDepthMode;
   fullText?: string; // For typing effect
   isTyping?: boolean; // For typing effect
 }
@@ -36,6 +38,10 @@ const TONE_STORAGE_KEY = 'greeneCounselTonePreference';
 const DEPTH_MODE_STORAGE_KEY = 'greeneCounselDepthPreference';
 export const CONVERSATION_HISTORY_STORAGE_KEY = 'greeneCounselConversationHistory';
 const TYPING_SPEED_MS = 2; // Milliseconds per character
+
+const isChatbotTone = (value: unknown): value is ChatbotTone => value === 'classic' || value === 'modern';
+const isChatbotDepthMode = (value: unknown): value is ChatbotDepthMode =>
+  value === 'surface' || value === 'philosophical' || value === 'tactical';
 
 export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,14 +71,14 @@ export default function Chatbot() {
   useEffect(() => {
     let initialTone = 'classic' as ChatbotTone;
     const storedTone = localStorage.getItem(TONE_STORAGE_KEY) as ChatbotTone | null;
-    if (storedTone && (storedTone === 'classic' || storedTone === 'modern')) {
+    if (isChatbotTone(storedTone)) {
       initialTone = storedTone;
     }
     setCurrentTone(initialTone);
 
     let initialDepthMode = 'philosophical' as ChatbotDepthMode;
     const storedDepthMode = localStorage.getItem(DEPTH_MODE_STORAGE_KEY) as ChatbotDepthMode | null;
-    if (storedDepthMode && (storedDepthMode === 'surface' || storedDepthMode === 'philosophical' || storedDepthMode === 'tactical')) {
+    if (isChatbotDepthMode(storedDepthMode)) {
       initialDepthMode = storedDepthMode;
     }
     setCurrentDepthMode(initialDepthMode);
@@ -83,7 +89,12 @@ export default function Chatbot() {
       try {
         const parsedHistory = JSON.parse(storedHistory);
         if (Array.isArray(parsedHistory) && parsedHistory.every(m => m.id && typeof m.text === 'string' && m.sender)) {
-          historyMessages = parsedHistory.map(m => ({...m, isTyping: false}));
+          historyMessages = parsedHistory.map(m => ({
+            ...m,
+            tone: isChatbotTone(m.tone) ? m.tone : undefined,
+            depthMode: isChatbotDepthMode(m.depthMode) ? m.depthMode : undefined,
+            isTyping: false,
+          }));
         }
       } catch (e) {
         console.error("Failed to parse conversation history from localStorage", e);
@@ -101,6 +112,8 @@ export default function Chatbot() {
           id: initialBotMessageId,
           text: welcomeText,
           sender: 'bot',
+          tone: initialTone,
+          depthMode: initialDepthMode,
           fullText: welcomeText,
           isTyping: false, // Display the initial message without typing.
         },
@@ -123,6 +136,8 @@ export default function Chatbot() {
             id: messages[0].id,
             text: updatedWelcomeText,
             sender: 'bot',
+            tone: currentTone,
+            depthMode: currentDepthMode,
             fullText: updatedWelcomeText,
             isTyping: false, // Update instantly without typing
           },
@@ -278,6 +293,8 @@ export default function Chatbot() {
         id: botMessageId,
         text: '', 
         sender: 'bot',
+        tone: currentTone,
+        depthMode: currentDepthMode,
         fullText: response.advice,
         isTyping: true,
       }]);

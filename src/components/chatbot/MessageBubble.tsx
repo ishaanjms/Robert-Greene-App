@@ -1,7 +1,7 @@
 // src/components/chatbot/MessageBubble.tsx
 "use client";
 
-import type { Message } from './Chatbot';
+import type { ChatbotDepthMode, ChatbotTone, Message } from './Chatbot';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { BrainCircuit, User } from 'lucide-react';
@@ -12,8 +12,22 @@ interface MessageBubbleProps {
   message: Message;
 }
 
+const toneLabels: Record<ChatbotTone, string> = {
+  classic: 'Classic Greene',
+  modern: 'Modern Clarity',
+};
+
+const depthLabels: Record<ChatbotDepthMode, string> = {
+  surface: 'Surface Strategy',
+  philosophical: 'Philosophical Depth',
+  tactical: 'Tactical Combat Plan',
+};
+
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
+  const toneLabel = message.tone ? toneLabels[message.tone] : undefined;
+  const depthLabel = message.depthMode ? depthLabels[message.depthMode] : undefined;
+  const shouldShowMode = !isUser && !message.isTyping && toneLabel && depthLabel;
 
   return (
     <div
@@ -52,6 +66,13 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         >
           {message.text}
         </ReactMarkdown>
+        {shouldShowMode && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] leading-none text-stone-700/55">
+            <span className="mr-0.5">Used</span>
+            <span className="rounded-full bg-black/5 px-2 py-1">{toneLabel}</span>
+            <span className="rounded-full bg-black/5 px-2 py-1">{depthLabel}</span>
+          </div>
+        )}
       </div>
       {isUser && (
         <Avatar className="h-8 w-8 shrink-0 border border-white/15 shadow-sm sm:h-9 sm:w-9">
