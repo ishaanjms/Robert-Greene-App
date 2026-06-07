@@ -32,8 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">{/* Force dark theme as per design */}
       <body className={`${merriweather.variable} ${openSans.variable} font-sans antialiased`}>
-        <SidebarProvider defaultOpen // Default to open on desktop, mobile will be closed by Sheet
-        > 
+        <SidebarProvider defaultOpen={false}>
           <AppSidebar />
           <SidebarInset>
             {children}

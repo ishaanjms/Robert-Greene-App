@@ -36,6 +36,12 @@ const PhilosophicalGuidanceOutputSchema = z.object({
 export type PhilosophicalGuidanceOutput = z.infer<typeof PhilosophicalGuidanceOutputSchema>;
 
 export async function getPhilosophicalGuidance(input: PhilosophicalGuidanceInput): Promise<PhilosophicalGuidanceOutput> {
+  if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+    return {
+      advice: 'Gemini is not configured yet. Add `GEMINI_API_KEY=your_api_key_here` or `GOOGLE_API_KEY=your_api_key_here` to `.env.local`, then restart the dev server.',
+    };
+  }
+
   return philosophicalGuidanceFlow(input);
 }
 

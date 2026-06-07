@@ -42,6 +42,13 @@ const TYPING_SPEED_MS = 2; // Milliseconds per character
 const isChatbotTone = (value: unknown): value is ChatbotTone => value === 'classic' || value === 'modern';
 const isChatbotDepthMode = (value: unknown): value is ChatbotDepthMode =>
   value === 'surface' || value === 'philosophical' || value === 'tactical';
+const createMessageId = () => {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
 
 export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -56,17 +63,6 @@ export default function Chatbot() {
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-
-  const getInitialMessageText = (tone: ChatbotTone, depth: ChatbotDepthMode) => {
-    const toneText = tone === 'classic' ? 'Classic Greene' : 'Modern Clarity';
-    let depthText = '';
-    switch (depth) {
-      case 'surface': depthText = 'Surface Strategy'; break;
-      case 'philosophical': depthText = 'Philosophical Depth'; break;
-      case 'tactical': depthText = 'Tactical Combat Plan'; break;
-    }
-    return `Greetings. I am a reflection of Robert Greene's strategic mind. My current advisory style is ${toneText} with ${depthText}. You can adjust these settings using the icons in the header. How may I assist you?`;
-  };
 
   useEffect(() => {
     let initialTone = 'classic' as ChatbotTone;
@@ -102,49 +98,16 @@ export default function Chatbot() {
       }
     }
 
-    if (historyMessages.length > 0) {
-      setMessages(historyMessages);
-    } else {
-      const initialBotMessageId = crypto.randomUUID();
-      const welcomeText = getInitialMessageText(initialTone, initialDepthMode);
-      setMessages([
-        {
-          id: initialBotMessageId,
-          text: welcomeText,
-          sender: 'bot',
-          tone: initialTone,
-          depthMode: initialDepthMode,
-          fullText: welcomeText,
-          isTyping: false, // Display the initial message without typing.
-        },
-      ]);
-    }
+    const hasOnlyLegacyWelcome =
+      historyMessages.length === 1 &&
+      historyMessages[0].sender === 'bot' &&
+      historyMessages[0].text.startsWith("Greetings. I am a reflection");
+
+    setMessages(hasOnlyLegacyWelcome ? [] : historyMessages);
 
     setIsClientInitialized(true);
     inputRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    if (!isClientInitialized) return;
-
-    // This effect updates the welcome message if tone/depth is changed before the conversation starts.
-    if (messages.length === 1 && messages[0].sender === 'bot' && messages[0].text.startsWith("Greetings. I am a reflection")) {
-      const updatedWelcomeText = getInitialMessageText(currentTone, currentDepthMode);
-      if (messages[0].text !== updatedWelcomeText) {
-         setMessages([
-          {
-            id: messages[0].id,
-            text: updatedWelcomeText,
-            sender: 'bot',
-            tone: currentTone,
-            depthMode: currentDepthMode,
-            fullText: updatedWelcomeText,
-            isTyping: false, // Update instantly without typing
-          },
-        ]);
-      }
-    }
-  }, [currentTone, currentDepthMode, isClientInitialized, messages]);
 
 
   useEffect(() => {
@@ -259,7 +222,7 @@ export default function Chatbot() {
     if (!inputValue.trim() || isLoading || !isClientInitialized || messages.some(msg => msg.isTyping)) return;
 
     const userMessage: Message = {
-      id: crypto.randomUUID(),
+      id: createMessageId(),
       text: inputValue,
       sender: 'user',
     };
@@ -288,7 +251,7 @@ export default function Chatbot() {
       };
       const response = await getPhilosophicalGuidance(input);
       
-      const botMessageId = crypto.randomUUID();
+      const botMessageId = createMessageId();
       setMessages((prevMessages) => [...prevMessages, {
         id: botMessageId,
         text: '', 
@@ -301,7 +264,7 @@ export default function Chatbot() {
 
     } catch (error) {
       console.error('Error getting guidance:', error);
-      const errorBotMessageId = crypto.randomUUID();
+      const errorBotMessageId = createMessageId();
       const errorText = 'Apologies, I encountered an issue processing your request. Please try again later.';
       setMessages((prevMessages) => [...prevMessages, {
         id: errorBotMessageId,
@@ -345,6 +308,41 @@ export default function Chatbot() {
     }
   }, [messages, conversationContext]);
 
+  const hasTypingMessage = messages.some(msg => msg.isTyping);
+  const isInputDisabled = isLoading || hasTypingMessage;
+  const isConversationEmpty = messages.length === 0;
+
+  const renderComposer = (placement: 'center' | 'footer') => (
+    <form
+      onSubmit={handleSubmit}
+      className={cn(
+        "flex w-full items-center gap-2 rounded-full border border-white/10 bg-black/25 p-1.5 shadow-2xl shadow-black/25 backdrop-blur-md",
+        placement === 'center' && "bg-black/30"
+      )}
+    >
+      <Input
+        ref={inputRef}
+        type="text"
+        placeholder="Describe your situation..."
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        className="h-11 flex-grow rounded-full border-0 bg-transparent px-3 text-base text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+        disabled={isInputDisabled}
+        aria-label="Chat input"
+      />
+      <Button
+        type="submit"
+        size="icon"
+        className="h-10 w-10 shrink-0 rounded-full bg-primary text-primary-foreground shadow-md shadow-black/25 transition-transform hover:bg-primary/90 active:scale-95 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:h-11 sm:w-11"
+        disabled={isLoading || !inputValue.trim() || hasTypingMessage}
+        aria-label="Send message"
+      >
+        <Send size={isMobile ? 18 : 20} />
+        <span className="sr-only">Send</span>
+      </Button>
+    </form>
+  );
+
   if (!isClientInitialized) {
     return (
       <div className="app-shell-bg flex h-screen w-full flex-col items-center justify-center overflow-hidden text-foreground">
@@ -379,9 +377,9 @@ export default function Chatbot() {
                 "font-bold",
                 "truncate",
               )}
-              title={conversationContext}
+              title={isConversationEmpty ? "Greene's Counsel" : conversationContext}
             >
-              {conversationContext}
+              {isConversationEmpty ? "Greene's Counsel" : conversationContext}
             </h1>
           </div>
         </div>
@@ -423,48 +421,40 @@ export default function Chatbot() {
         </div>
       </header>
 
-      <ScrollArea className="flex-grow px-3 py-5 sm:px-5 sm:py-8" ref={scrollAreaRef}>
-        <div className="mx-auto w-full max-w-3xl px-1 py-2 sm:px-4 sm:py-4">
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))}
-          {isLoading && !messages.some(msg => msg.isTyping && msg.sender === 'bot') && ( 
-            <div className="flex justify-center py-4">
-              <div className="flex items-center space-x-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-muted-foreground shadow-sm">
-                <BrainCircuit className="animate-pulse" size={16} />
-                <span>Robert Greene is contemplating...</span>
-              </div>
+      {isConversationEmpty ? (
+        <main className="flex flex-grow items-center justify-center px-4 pb-20">
+          <div className="w-full max-w-3xl">
+            <div className="mb-7 text-center">
+              <h2 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">What are you navigating?</h2>
             </div>
-          )}
-        </div>
-      </ScrollArea>
+            {renderComposer('center')}
+          </div>
+        </main>
+      ) : (
+        <>
+          <ScrollArea className="flex-grow px-3 py-5 sm:px-5 sm:py-8" ref={scrollAreaRef}>
+            <div className="mx-auto w-full max-w-3xl px-1 py-2 sm:px-4 sm:py-4">
+              {messages.map((msg) => (
+                <MessageBubble key={msg.id} message={msg} />
+              ))}
+              {isLoading && !messages.some(msg => msg.isTyping && msg.sender === 'bot') && (
+                <div className="flex justify-center py-4">
+                  <div className="flex items-center space-x-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-muted-foreground shadow-sm">
+                    <BrainCircuit className="animate-pulse" size={16} />
+                    <span>Robert Greene is contemplating...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
 
-      <footer className="surface-glass shrink-0 border-t border-white/10 px-3 py-3 sm:px-5 sm:py-4">
-        <div className="mx-auto max-w-3xl">
-          <form onSubmit={handleSubmit} className="flex w-full items-center gap-2 rounded-full border border-white/10 bg-black/25 p-1.5 shadow-2xl shadow-black/25 backdrop-blur-md">
-            <Input
-              ref={inputRef}
-              type="text"
-              placeholder="Describe your situation..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              className="h-11 flex-grow rounded-full border-0 bg-transparent px-3 text-base text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-              disabled={isLoading || messages.some(msg => msg.isTyping)} 
-              aria-label="Chat input"
-            />
-            <Button
-              type="submit"
-              size="icon"
-              className="h-10 w-10 shrink-0 rounded-full bg-primary text-primary-foreground shadow-md shadow-black/25 transition-transform hover:bg-primary/90 active:scale-95 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:h-11 sm:w-11"
-              disabled={isLoading || !inputValue.trim() || messages.some(msg => msg.isTyping)} 
-              aria-label="Send message"
-            >
-              <Send size={isMobile ? 18 : 20} />
-              <span className="sr-only">Send</span>
-            </Button>
-          </form>
-        </div>
-      </footer>
+          <footer className="surface-glass shrink-0 border-t border-white/10 px-3 py-3 sm:px-5 sm:py-4">
+            <div className="mx-auto max-w-3xl">
+              {renderComposer('footer')}
+            </div>
+          </footer>
+        </>
+      )}
     </div>
   );
 }
