@@ -14,7 +14,10 @@ import {
 } from "@/components/ui/sidebar";
 import { PlusCircle, ChevronsLeft, ChevronsRight, Bot, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CONVERSATION_HISTORY_STORAGE_KEY } from '@/components/chatbot/Chatbot';
+import {
+  CONVERSATION_HISTORY_STORAGE_KEY,
+  CONVERSATION_TITLE_STORAGE_KEY,
+} from '@/components/chatbot/Chatbot';
 
 
 export default function AppSidebar() {
@@ -24,6 +27,7 @@ export default function AppSidebar() {
     // Clear conversation history from localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem(CONVERSATION_HISTORY_STORAGE_KEY);
+      localStorage.removeItem(CONVERSATION_TITLE_STORAGE_KEY);
     }
     // Reload the page to re-initialize the Chatbot component
     window.location.reload();

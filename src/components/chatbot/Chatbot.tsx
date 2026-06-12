@@ -37,6 +37,7 @@ export type ChatbotDepthMode = 'surface' | 'philosophical' | 'tactical';
 const TONE_STORAGE_KEY = 'greeneCounselTonePreference';
 const DEPTH_MODE_STORAGE_KEY = 'greeneCounselDepthPreference';
 export const CONVERSATION_HISTORY_STORAGE_KEY = 'greeneCounselConversationHistory';
+export const CONVERSATION_TITLE_STORAGE_KEY = 'greeneCounselConversationTitle';
 const TYPING_SPEED_MS = 2; // Milliseconds per character
 const QUOTE_ROTATION_MS = 6000;
 const LOADING_QUOTES: Array<{ author: string; text: string }> = [
@@ -58,12 +59,73 @@ const LOADING_QUOTES: Array<{ author: string; text: string }> = [
 const isChatbotTone = (value: unknown): value is ChatbotTone => value === 'classic' || value === 'modern';
 const isChatbotDepthMode = (value: unknown): value is ChatbotDepthMode =>
   value === 'surface' || value === 'philosophical' || value === 'tactical';
+
+const TITLE_MAX_LENGTH = 34;
+const titleStopWords = new Set([
+  'a', 'about', 'am', 'an', 'and', 'are', 'at', 'be', 'but', 'can', 'do', 'for', 'from', 'getting',
+  'have', 'help', 'how', 'i', 'im', 'in', 'is', 'it', 'me', 'my', 'need', 'of', 'on', 'or', 'our',
+  'should', 'that', 'the', 'this', 'to', 'want', 'what', 'when', 'with',
+]);
+
 const createMessageId = () => {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
     return globalThis.crypto.randomUUID();
   }
 
   return `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+const toTitleCase = (text: string) =>
+  text
+    .split(' ')
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+
+const trimTitle = (title: string) => {
+  if (title.length <= TITLE_MAX_LENGTH) return title;
+  const words = title.split(' ');
+  let trimmed = '';
+
+  for (const word of words) {
+    const next = trimmed ? `${trimmed} ${word}` : word;
+    if (next.length > TITLE_MAX_LENGTH) break;
+    trimmed = next;
+  }
+
+  return trimmed || `${title.slice(0, TITLE_MAX_LENGTH - 3).trim()}...`;
+};
+
+const generateConversationTitle = (text: string) => {
+  const normalized = text
+    .toLowerCase()
+    .replace(/\b(i'm|i am)\b/g, 'im')
+    .replace(/\b(job|work)\s+loss\b/g, 'job loss')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const titlePatterns: Array<[RegExp, string]> = [
+    [/\b(job loss|loss of job|loss of my job|lose my job|losing my job|fired|layoff|laid off)\b/, 'Fear of Job Loss'],
+    [/\b(career path|career|profession|promotion)\b.*\b(uncertain|confused|stuck|lost)\b|\b(uncertain|confused|stuck|lost)\b.*\b(career path|career|profession|promotion)\b/, 'Career Uncertainty'],
+    [/\b(boss|manager|superior)\b.*\b(power|control|politics|manipulat|conflict|difficult)\b|\b(power|control|politics|manipulat|conflict|difficult)\b.*\b(boss|manager|superior)\b/, 'Boss Power Dynamic'],
+    [/\b(workplace|office|team|colleague|coworker)\b.*\b(conflict|politics|tension|power|trust)\b|\b(conflict|politics|tension|power|trust)\b.*\b(workplace|office|team|colleague|coworker)\b/, 'Workplace Power Dynamic'],
+    [/\b(negotiate|negotiation|deal|offer|salary)\b/, 'Negotiation Strategy'],
+    [/\b(influence|persuade|persuasion|convince)\b/, 'Influence Strategy'],
+    [/\b(relationship|dating|seduction|partner|love)\b/, 'Relationship Strategy'],
+    [/\b(decision|choose|choice|option|options|path|stuck between)\b/, 'Strategic Decision'],
+    [/\b(fear|fearing|anxiety|afraid|worried|panic)\b/, 'Fear and Uncertainty'],
+  ];
+
+  const matchedPattern = titlePatterns.find(([pattern]) => pattern.test(normalized));
+  if (matchedPattern) return matchedPattern[1];
+
+  const keywords = normalized
+    .split(' ')
+    .filter(word => word.length > 2 && !titleStopWords.has(word))
+    .slice(0, 4);
+
+  return keywords.length ? trimTitle(toTitleCase(keywords.join(' '))) : 'Strategic Counsel';
 };
 
 export default function Chatbot() {
@@ -121,6 +183,10 @@ export default function Chatbot() {
       historyMessages[0].text.startsWith("Greetings. I am a reflection");
 
     setMessages(hasOnlyLegacyWelcome ? [] : historyMessages);
+    const storedTitle = localStorage.getItem(CONVERSATION_TITLE_STORAGE_KEY);
+    if (!hasOnlyLegacyWelcome && storedTitle?.trim()) {
+      setConversationContext(storedTitle.trim());
+    }
 
     setIsClientInitialized(true);
     inputRef.current?.focus();
@@ -301,19 +367,6 @@ export default function Chatbot() {
     }
   };
 
-  const capitalizeFirstWord = (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return trimmed;
-    return trimmed.replace(/^(\p{L})(.*)$/u, (_, first, rest) => `${first.toUpperCase()}${rest}`);
-  };
-
-  const formatContextText = (text: string) => {
-    const words = text.split(/\s+/).filter(Boolean);
-    const maxWords = 4; // keep between 2-4 words
-    const base = words.length <= maxWords ? text : `${words.slice(0, maxWords).join(' ')}...`;
-    return capitalizeFirstWord(base);
-  };
-
   // Lock the conversation context to the first meaningful (>=3 words) user message.
   useEffect(() => {
     if (conversationContext !== 'Awaiting topic') return; // already set, do not change
@@ -321,7 +374,9 @@ export default function Chatbot() {
       (msg) => msg.sender === 'user' && typeof msg.text === 'string' && msg.text.trim().split(/\s+/).filter(Boolean).length >= 3
     );
     if (firstMeaningfulUser?.text) {
-      setConversationContext(formatContextText(firstMeaningfulUser.text.trim()));
+      const generatedTitle = generateConversationTitle(firstMeaningfulUser.text.trim());
+      setConversationContext(generatedTitle);
+      localStorage.setItem(CONVERSATION_TITLE_STORAGE_KEY, generatedTitle);
     }
   }, [messages, conversationContext]);
 
