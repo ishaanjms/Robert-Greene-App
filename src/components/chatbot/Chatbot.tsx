@@ -38,7 +38,7 @@ const TONE_STORAGE_KEY = 'greeneCounselTonePreference';
 const DEPTH_MODE_STORAGE_KEY = 'greeneCounselDepthPreference';
 export const CONVERSATION_HISTORY_STORAGE_KEY = 'greeneCounselConversationHistory';
 const TYPING_SPEED_MS = 2; // Milliseconds per character
-const QUOTE_ROTATION_MS = 4200;
+const QUOTE_ROTATION_MS = 6000;
 const LOADING_QUOTES: Array<{ author: string; text: string }> = [
   { author: 'Sun Tzu', text: 'All warfare is based on deception.' },
   { author: 'Voltaire', text: 'Lord, protect me from my friends; I can take care of my enemies.' },
@@ -473,11 +473,13 @@ export default function Chatbot() {
                       <BrainCircuit className="animate-pulse" size={16} />
                       <span>Robert Greene is contemplating...</span>
                     </div>
-                    <blockquote className="mt-3 text-sm leading-relaxed text-foreground/75">
-                      "{activeQuote.text}"
-                    </blockquote>
-                    <div className="mt-2 text-[11px] text-muted-foreground/70">
-                      {activeQuote.author}
+                    <div key={activeQuoteIndex} className="loading-quote-transition">
+                      <blockquote className="mt-3 text-sm leading-relaxed text-foreground/75">
+                        "{activeQuote.text}"
+                      </blockquote>
+                      <div className="mt-2 text-[11px] text-muted-foreground/70">
+                        {activeQuote.author}
+                      </div>
                     </div>
                   </div>
                 </div>

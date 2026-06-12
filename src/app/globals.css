@@ -299,6 +299,23 @@ body {
     transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
   }
 
+  .loading-quote-transition {
+    animation: loading-quote-enter 620ms ease-out both;
+  }
+
+  @keyframes loading-quote-enter {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+      filter: blur(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+
   .composer-focus-glow:focus-within {
     border-color: hsl(38 18% 64% / 0.42);
     box-shadow:
@@ -334,6 +351,10 @@ body {
 
   @media (prefers-reduced-motion: reduce) {
     .composer-focus-glow:focus-within {
+      animation: none;
+    }
+
+    .loading-quote-transition {
       animation: none;
     }
   }
