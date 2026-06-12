@@ -23,12 +23,21 @@ const depthLabels: Record<ChatbotDepthMode, string> = {
   tactical: 'Tactical Combat Plan',
 };
 
+const normalizeMarkdownText = (text: string) =>
+  text
+    .replace(/\s+(#{1,4}\s+)/g, '\n\n$1')
+    .replace(/^(#{1,4}\s+[^.\n]{3,80})\.\s+([A-Z])/gm, '$1\n\n$2')
+    .replace(/\s+---\s+/g, '\n\n---\n\n')
+    .replace(/([.!?])\s+(\d+\.\s+)/g, '$1\n$2')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
   const toneLabel = message.tone ? toneLabels[message.tone] : undefined;
   const depthLabel = message.depthMode ? depthLabels[message.depthMode] : undefined;
   const shouldShowMode = !isUser && !message.isTyping && toneLabel && depthLabel;
-  const displayText = message.text.replace(/\n{3,}/g, '\n\n');
+  const displayText = normalizeMarkdownText(message.text);
 
   return (
     <div
