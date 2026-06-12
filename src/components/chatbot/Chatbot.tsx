@@ -33,7 +33,11 @@ export interface Message {
 
 export type ChatbotTone = 'classic' | 'modern';
 export type ChatbotDepthMode = 'surface' | 'philosophical' | 'tactical';
-export type ChatbotModel = 'gemini-3-flash' | 'huggingface-openai-gpt-oss-120b';
+export type ChatbotModel =
+  | 'gemini-3-flash'
+  | 'huggingface-openai-gpt-oss-120b'
+  | 'huggingface-deepseek-v4-pro'
+  | 'huggingface-nvidia-nemotron-3-ultra-550b';
 
 const TONE_STORAGE_KEY = 'greeneCounselTonePreference';
 const DEPTH_MODE_STORAGE_KEY = 'greeneCounselDepthPreference';
@@ -55,6 +59,20 @@ export const CHATBOT_MODEL_OPTIONS: Array<{
     provider: 'Hugging Face',
     modelId: 'openai/gpt-oss-120b',
     description: 'Routes responses through Hugging Face Inference Providers.',
+  },
+  {
+    value: 'huggingface-deepseek-v4-pro',
+    label: 'DeepSeek V4 Pro',
+    provider: 'Hugging Face',
+    modelId: 'deepseek-ai/DeepSeek-V4-Pro',
+    description: 'Uses DeepSeek V4 Pro through Hugging Face Inference Providers.',
+  },
+  {
+    value: 'huggingface-nvidia-nemotron-3-ultra-550b',
+    label: 'NVIDIA Nemotron 3 Ultra 550B',
+    provider: 'Hugging Face',
+    modelId: 'nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4',
+    description: 'Uses NVIDIA Nemotron 3 Ultra through Hugging Face Inference Providers.',
   },
   {
     value: 'gemini-3-flash',
@@ -129,7 +147,7 @@ const isChatbotTone = (value: unknown): value is ChatbotTone => value === 'class
 const isChatbotDepthMode = (value: unknown): value is ChatbotDepthMode =>
   value === 'surface' || value === 'philosophical' || value === 'tactical';
 const isChatbotModel = (value: unknown): value is ChatbotModel =>
-  value === 'gemini-3-flash' || value === 'huggingface-openai-gpt-oss-120b';
+  CHATBOT_MODEL_OPTIONS.some(option => option.value === value);
 
 const TITLE_MAX_LENGTH = 34;
 const titleStopWords = new Set([

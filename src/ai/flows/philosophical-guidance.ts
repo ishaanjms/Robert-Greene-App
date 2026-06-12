@@ -26,7 +26,12 @@ const PhilosophicalGuidanceInputSchema = z.object({
   situation: z.string().describe('A detailed description of the user\'s current situation related to power dynamics, strategy, seduction, mastery, or human behavior.'),
   tone: z.enum(['classic', 'modern']).default('classic').describe('The desired tone of the response. "classic" for metaphor-rich, philosophical language, or "modern" for concise, straightforward guidance.'),
   depthMode: z.enum(['surface', 'philosophical', 'tactical']).default('philosophical').describe('The desired depth of the advice. "surface" for quick tips, "philosophical" for rich insights, or "tactical" for detailed plans.'),
-  model: z.enum(['gemini-3-flash', 'huggingface-openai-gpt-oss-120b']).default('gemini-3-flash').describe('The model provider and model selected by the user.'),
+  model: z.enum([
+    'gemini-3-flash',
+    'huggingface-openai-gpt-oss-120b',
+    'huggingface-deepseek-v4-pro',
+    'huggingface-nvidia-nemotron-3-ultra-550b',
+  ]).default('gemini-3-flash').describe('The model provider and model selected by the user.'),
   conversationHistory: z.array(MessageSchema).optional().describe('The ongoing dialogue history between the user and the chatbot. Used to maintain context and personalize responses.'),
 });
 export type PhilosophicalGuidanceInput = z.infer<typeof PhilosophicalGuidanceInputSchema>;
@@ -36,8 +41,14 @@ const PhilosophicalGuidanceOutputSchema = z.object({
 });
 export type PhilosophicalGuidanceOutput = z.infer<typeof PhilosophicalGuidanceOutputSchema>;
 
+const huggingFaceModelIds: Partial<Record<PhilosophicalGuidanceInput['model'], string>> = {
+  'huggingface-openai-gpt-oss-120b': 'openai/gpt-oss-120b',
+  'huggingface-deepseek-v4-pro': 'deepseek-ai/DeepSeek-V4-Pro',
+  'huggingface-nvidia-nemotron-3-ultra-550b': 'nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4',
+};
+
 export async function getPhilosophicalGuidance(input: PhilosophicalGuidanceInput): Promise<PhilosophicalGuidanceOutput> {
-  if (input.model === 'huggingface-openai-gpt-oss-120b') {
+  if (input.model.startsWith('huggingface-')) {
     return getHuggingFaceGuidance(input);
   }
 
@@ -97,6 +108,14 @@ Format every answer for easy reading in markdown:
 };
 
 const getHuggingFaceGuidance = async (input: PhilosophicalGuidanceInput): Promise<PhilosophicalGuidanceOutput> => {
+  const modelId = huggingFaceModelIds[input.model];
+
+  if (!modelId) {
+    return {
+      advice: 'The selected Hugging Face model is not recognized. Please choose another model in Settings.',
+    };
+  }
+
   const token =
     process.env.HUGGINGFACE_API_KEY ||
     process.env.HUGGING_FACE_API_KEY ||
@@ -116,7 +135,7 @@ const getHuggingFaceGuidance = async (input: PhilosophicalGuidanceInput): Promis
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
+        model: modelId,
         messages: [
           {
             role: 'system',
@@ -137,7 +156,7 @@ const getHuggingFaceGuidance = async (input: PhilosophicalGuidanceInput): Promis
       console.error('Hugging Face guidance request failed:', response.status, errorText);
 
       return {
-        advice: `I could not reach Hugging Face for this response. The selected model is \`openai/gpt-oss-120b\`, but the request failed with status ${response.status}. Check your Hugging Face token, provider access, quota, and Vercel environment variables.`,
+        advice: `I could not reach Hugging Face for this response. The selected model is \`${modelId}\`, but the request failed with status ${response.status}. Check your Hugging Face token, provider access, quota, and Vercel environment variables.`,
       };
     }
 
