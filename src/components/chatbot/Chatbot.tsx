@@ -33,11 +33,37 @@ export interface Message {
 
 export type ChatbotTone = 'classic' | 'modern';
 export type ChatbotDepthMode = 'surface' | 'philosophical' | 'tactical';
+export type ChatbotModel = 'gemini-3-flash' | 'huggingface-openai-gpt-oss-120b';
 
 const TONE_STORAGE_KEY = 'greeneCounselTonePreference';
 const DEPTH_MODE_STORAGE_KEY = 'greeneCounselDepthPreference';
+export const MODEL_STORAGE_KEY = 'greeneCounselModelPreference';
+export const MODEL_CHANGE_EVENT = 'greeneCounselModelChanged';
 export const CONVERSATION_HISTORY_STORAGE_KEY = 'greeneCounselConversationHistory';
 export const CONVERSATION_TITLE_STORAGE_KEY = 'greeneCounselConversationTitle';
+export const DEFAULT_CHATBOT_MODEL: ChatbotModel = 'huggingface-openai-gpt-oss-120b';
+export const CHATBOT_MODEL_OPTIONS: Array<{
+  value: ChatbotModel;
+  label: string;
+  provider: string;
+  modelId: string;
+  description: string;
+}> = [
+  {
+    value: 'huggingface-openai-gpt-oss-120b',
+    label: 'GPT OSS 120B',
+    provider: 'Hugging Face',
+    modelId: 'openai/gpt-oss-120b',
+    description: 'Routes responses through Hugging Face Inference Providers.',
+  },
+  {
+    value: 'gemini-3-flash',
+    label: 'Gemini 3 Flash',
+    provider: 'Google AI',
+    modelId: 'gemini-3-flash-preview',
+    description: 'Uses the Gemini API configured on the server.',
+  },
+];
 const TYPING_SPEED_MS = 2; // Milliseconds per character
 const QUOTE_ROTATION_MS = 6000;
 const LOADING_QUOTES: Array<{ author: string; text: string }> = [
@@ -102,6 +128,8 @@ const LOADING_QUOTES: Array<{ author: string; text: string }> = [
 const isChatbotTone = (value: unknown): value is ChatbotTone => value === 'classic' || value === 'modern';
 const isChatbotDepthMode = (value: unknown): value is ChatbotDepthMode =>
   value === 'surface' || value === 'philosophical' || value === 'tactical';
+const isChatbotModel = (value: unknown): value is ChatbotModel =>
+  value === 'gemini-3-flash' || value === 'huggingface-openai-gpt-oss-120b';
 
 const TITLE_MAX_LENGTH = 34;
 const titleStopWords = new Set([
@@ -177,6 +205,7 @@ export default function Chatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentTone, setCurrentTone] = useState<ChatbotTone>('classic');
   const [currentDepthMode, setCurrentDepthMode] = useState<ChatbotDepthMode>('philosophical');
+  const [currentModel, setCurrentModel] = useState<ChatbotModel>(DEFAULT_CHATBOT_MODEL);
   const [isClientInitialized, setIsClientInitialized] = useState(false);
   const [conversationContext, setConversationContext] = useState<string>('Awaiting topic');
   const [activeQuoteIndex, setActiveQuoteIndex] = useState(0);
@@ -200,6 +229,9 @@ export default function Chatbot() {
       initialDepthMode = storedDepthMode;
     }
     setCurrentDepthMode(initialDepthMode);
+
+    const storedModel = localStorage.getItem(MODEL_STORAGE_KEY);
+    setCurrentModel(isChatbotModel(storedModel) ? storedModel : DEFAULT_CHATBOT_MODEL);
 
     const storedHistory = localStorage.getItem(CONVERSATION_HISTORY_STORAGE_KEY);
     let historyMessages: Message[] = [];
@@ -233,6 +265,18 @@ export default function Chatbot() {
 
     setIsClientInitialized(true);
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const handleModelChange = (event: Event) => {
+      const nextModel = (event as CustomEvent<ChatbotModel>).detail;
+      if (isChatbotModel(nextModel)) {
+        setCurrentModel(nextModel);
+      }
+    };
+
+    window.addEventListener(MODEL_CHANGE_EVENT, handleModelChange);
+    return () => window.removeEventListener(MODEL_CHANGE_EVENT, handleModelChange);
   }, []);
 
 
@@ -373,6 +417,7 @@ export default function Chatbot() {
         situation: userMessage.text,
         tone: currentTone,
         depthMode: currentDepthMode,
+        model: currentModel,
         conversationHistory: conversationHistoryForPrompt,
       };
       const response = await getPhilosophicalGuidance(input);
