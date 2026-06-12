@@ -28,6 +28,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const toneLabel = message.tone ? toneLabels[message.tone] : undefined;
   const depthLabel = message.depthMode ? depthLabels[message.depthMode] : undefined;
   const shouldShowMode = !isUser && !message.isTyping && toneLabel && depthLabel;
+  const displayText = message.text.replace(/\n{3,}/g, '\n\n');
 
   return (
     <div
@@ -63,7 +64,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             ),
           }}
         >
-          {message.text}
+          {displayText}
         </ReactMarkdown>
         {shouldShowMode && (
           <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] leading-none text-stone-700/55">
