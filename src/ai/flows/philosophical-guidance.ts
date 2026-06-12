@@ -42,7 +42,15 @@ export async function getPhilosophicalGuidance(input: PhilosophicalGuidanceInput
     };
   }
 
-  return philosophicalGuidanceFlow(input);
+  try {
+    return await philosophicalGuidanceFlow(input);
+  } catch (error) {
+    console.error('Gemini guidance flow failed:', error);
+
+    return {
+      advice: 'I could not reach Gemini for this response. The app is configured, but the AI request failed. Please try again in a moment; if this is happening on Vercel, check that the production `GEMINI_API_KEY` is set, unrestricted for this deployment, and that the project was redeployed after adding it.',
+    };
+  }
 }
 
 const prompt = ai.definePrompt({
