@@ -45,24 +45,23 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       )}
       <div
         className={cn(
-          'max-w-[82%] px-4 py-3 text-sm leading-relaxed shadow-lg sm:max-w-[76%] sm:px-6 sm:py-4 sm:text-base', 
+          'px-4 py-3 text-sm leading-relaxed shadow-lg sm:px-6 sm:py-4 sm:text-base',
           isUser
-            ? 'rounded-[1.75rem] rounded-br-lg border border-white/10 bg-white/10 text-foreground shadow-black/20' 
-            : 'cream-surface rounded-[1.75rem] rounded-bl-lg border border-white/10 shadow-black/15' 
+            ? 'max-w-[82%] rounded-[1.75rem] rounded-br-lg border border-white/10 bg-white/10 text-foreground shadow-black/20 sm:max-w-[72%]'
+            : 'cream-surface max-w-[90%] rounded-[1.75rem] rounded-bl-lg border border-white/10 shadow-black/15 sm:max-w-[84%]'
         )}
       >
         <ReactMarkdown
           className={cn(
-            "prose prose-sm max-w-none sm:prose-base prose-p:my-0 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-strong:text-inherit",
-            isUser
-              ? "dark:prose-invert prose-a:text-primary"
-              : "prose-neutral prose-a:text-stone-700"
+            'answer-markdown',
+            isUser ? 'answer-markdown-user' : 'answer-markdown-bot'
           )}
           remarkPlugins={[remarkGfm]}
-          // You can customize components if needed, e.g., for links or images
-          // components={{
-          //   a: ({node, ...props}) => <a target="_blank" rel="noopener noreferrer" {...props} />
-          // }}
+          components={{
+            a: ({ node, ...props }) => (
+              <a target="_blank" rel="noopener noreferrer" {...props} />
+            ),
+          }}
         >
           {message.text}
         </ReactMarkdown>
