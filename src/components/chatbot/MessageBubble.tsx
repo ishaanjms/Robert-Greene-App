@@ -23,12 +23,20 @@ const depthLabels: Record<ChatbotDepthMode, string> = {
   tactical: 'Tactical Combat Plan',
 };
 
+const titlePhrasePattern = String.raw`[A-Z][A-Za-z'’-]*(?:\s+(?:[A-Z][A-Za-z'’-]*|a|an|and|for|from|in|of|on|the|to|with|without)){1,6}`;
+
 const normalizeMarkdownText = (text: string) =>
   text
     .replace(/\s+(#{1,4}\s+)/g, '\n\n$1')
     .replace(/^(#{1,4}\s+[^.\n]{3,80})\.\s+([A-Z])/gm, '$1\n\n$2')
+    .replace(new RegExp(`(^|\\n)(${titlePhrasePattern})\\s+((?:\\d+\\.|\\*)\\s+)`, 'g'), '$1### $2\n\n$3')
     .replace(/\s+---\s+/g, '\n\n---\n\n')
+    .replace(/(^|\n)\*\s+/g, '$1- ')
+    .replace(/([.!?])\s+\*\s+/g, '$1\n- ')
     .replace(/([.!?])\s+(\d+\.\s+)/g, '$1\n$2')
+    .replace(new RegExp(`(^|\\n)(?!#{1,4}\\s|-\\s|\\d+\\.\\s)(${titlePhrasePattern})\\.\\s+([A-Z])`, 'g'), '$1- **$2.** $3')
+    .replace(new RegExp(`(^|\\n)-\\s+(${titlePhrasePattern})\\.\\s+([A-Z])`, 'g'), '$1- **$2.** $3')
+    .replace(/\n(#{1,4}\s)/g, '\n\n$1')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
@@ -37,7 +45,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const toneLabel = message.tone ? toneLabels[message.tone] : undefined;
   const depthLabel = message.depthMode ? depthLabels[message.depthMode] : undefined;
   const shouldShowMode = !isUser && !message.isTyping && toneLabel && depthLabel;
-  const displayText = normalizeMarkdownText(message.text);
+  const displayText = isUser ? message.text : normalizeMarkdownText(message.text);
 
   return (
     <div

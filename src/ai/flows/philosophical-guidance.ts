@@ -83,6 +83,8 @@ Format every answer for easy reading in markdown:
 - Keep paragraphs short: 1-3 sentences each.
 - Use numbered lists for actions or sequences, and bullet lists for observations or warnings.
 - Put every numbered or bulleted list item on its own line.
+- Never put a heading and a list item on the same line. Avoid formats like "The Tactical Sequence 1. Do this" or "Rebuilding the Fortress * Do this".
+- If a list item has a label, format it as "- **Label:** explanation" or "1. **Label:** explanation".
 - Use bold only for key phrases, not entire sentences.
 - If a divider helps separate the final reminder, use a single "---" on its own line, with a blank line before and after it.
 - End with a concise strategic reminder or takeaway.
