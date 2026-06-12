@@ -31,6 +31,7 @@ const PhilosophicalGuidanceInputSchema = z.object({
     'huggingface-openai-gpt-oss-120b',
     'huggingface-deepseek-v4-pro',
     'huggingface-nvidia-nemotron-3-ultra-550b',
+    'huggingface-meta-llama-3-1-405b-instruct',
   ]).default('gemini-3-flash').describe('The model provider and model selected by the user.'),
   conversationHistory: z.array(MessageSchema).optional().describe('The ongoing dialogue history between the user and the chatbot. Used to maintain context and personalize responses.'),
 });
@@ -45,6 +46,7 @@ const huggingFaceModelIds: Partial<Record<PhilosophicalGuidanceInput['model'], s
   'huggingface-openai-gpt-oss-120b': 'openai/gpt-oss-120b',
   'huggingface-deepseek-v4-pro': 'deepseek-ai/DeepSeek-V4-Pro',
   'huggingface-nvidia-nemotron-3-ultra-550b': 'nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4',
+  'huggingface-meta-llama-3-1-405b-instruct': 'meta-llama/Llama-3.1-405B-Instruct',
 };
 
 export async function getPhilosophicalGuidance(input: PhilosophicalGuidanceInput): Promise<PhilosophicalGuidanceOutput> {

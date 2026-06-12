@@ -37,7 +37,8 @@ export type ChatbotModel =
   | 'gemini-3-flash'
   | 'huggingface-openai-gpt-oss-120b'
   | 'huggingface-deepseek-v4-pro'
-  | 'huggingface-nvidia-nemotron-3-ultra-550b';
+  | 'huggingface-nvidia-nemotron-3-ultra-550b'
+  | 'huggingface-meta-llama-3-1-405b-instruct';
 
 const TONE_STORAGE_KEY = 'greeneCounselTonePreference';
 const DEPTH_MODE_STORAGE_KEY = 'greeneCounselDepthPreference';
@@ -73,6 +74,13 @@ export const CHATBOT_MODEL_OPTIONS: Array<{
     provider: 'Hugging Face',
     modelId: 'nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4',
     description: 'Uses NVIDIA Nemotron 3 Ultra through Hugging Face Inference Providers.',
+  },
+  {
+    value: 'huggingface-meta-llama-3-1-405b-instruct',
+    label: 'Llama 3.1 405B Instruct',
+    provider: 'Hugging Face',
+    modelId: 'meta-llama/Llama-3.1-405B-Instruct',
+    description: 'Uses Meta Llama 3.1 405B Instruct through Hugging Face Inference Providers.',
   },
   {
     value: 'gemini-3-flash',
