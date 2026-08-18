@@ -119,15 +119,32 @@ const normalizeMessage = (message: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-const hasRecentlyAskedForContext = (history?: PhilosophicalGuidanceInput['conversationHistory']) => {
-  const previousBotMessage = [...(history ?? [])]
+const getPreviousBotMessage = (history?: PhilosophicalGuidanceInput['conversationHistory']) =>
+  [...(history ?? [])]
     .reverse()
     .find(message => message.sender === 'bot');
+
+const hasRecentlyAskedForContext = (history?: PhilosophicalGuidanceInput['conversationHistory']) => {
+  const previousBotMessage = getPreviousBotMessage(history);
 
   return Boolean(
     previousBotMessage &&
       CLARIFYING_RESPONSES.some(response => previousBotMessage.text.trim() === response)
   );
+};
+
+const isAffirmingBotOffer = (
+  normalized: string,
+  history?: PhilosophicalGuidanceInput['conversationHistory']
+) => {
+  if (!/^(yes|yes i would|yes please|yeah|yep|sure|please|do it|go ahead|sounds good|ok|okay|alright|absolutely|i would like|yes i would like)$/.test(normalized)) {
+    return false;
+  }
+
+  const previousBotMessage = getPreviousBotMessage(history);
+  if (!previousBotMessage) return false;
+
+  return /\b(would you like|do you want|want me to|should i|shall i|follow-up|tips on|help with|draft|frame|framing|outline|next)\b/i.test(previousBotMessage.text);
 };
 
 const getContextDepthScore = (normalized: string) => {
@@ -153,10 +170,10 @@ const getContextDepthScore = (normalized: string) => {
 };
 
 const getClarifyingResponse = (input: PhilosophicalGuidanceInput): PhilosophicalGuidanceOutput | null => {
-  if (hasRecentlyAskedForContext(input.conversationHistory)) return null;
-
   const normalized = normalizeMessage(input.situation);
   if (!normalized) return null;
+  if (hasRecentlyAskedForContext(input.conversationHistory)) return null;
+  if (isAffirmingBotOffer(normalized, input.conversationHistory)) return null;
 
   const words = normalized.split(' ');
   const contextScore = getContextDepthScore(normalized);
@@ -203,7 +220,7 @@ const getClarifyingResponse = (input: PhilosophicalGuidanceInput): Philosophical
   }
 
   return {
-    advice: "What happened, who's involved, and what are you trying to understand?",
+    advice: "Give me one concrete scene: what happened most recently, and what are you unsure how to respond to?",
   };
 };
 
@@ -265,6 +282,7 @@ Depth:
 Selected depthMode: ${input.depthMode}
 
 Format every answer for easy reading in markdown:
+- If the user replies with a brief affirmative such as "yes", "yes please", "sure", or "yes I would" after you offered a specific follow-up, continue directly with that promised follow-up using the prior context. Do not ask what happened again.
 - If the user gives very little context after you have already asked for clarification, do not write a long general essay. Give a brief directional read in under 120 words, name one practical next move, and ask at most one essential follow-up question.
 - Start with a direct 1-2 sentence counsel paragraph before any heading.
 - Use 2-4 short section headings with "###" markdown headings.
@@ -386,6 +404,7 @@ The user has also requested guidance with a "{{{depthMode}}}" knowledge depth.
 - If depthMode is "tactical": Provide a detailed, step-by-step strategic plan. Break down the approach into clear, sequential actions. Be specific and prescriptive, as if outlining a battle plan for a complex scenario.
 
 Format every answer for easy reading in markdown:
+- If the user replies with a brief affirmative such as "yes", "yes please", "sure", or "yes I would" after you offered a specific follow-up, continue directly with that promised follow-up using the prior context. Do not ask what happened again.
 - If the user gives very little context after you have already asked for clarification, do not write a long general essay. Give a brief directional read in under 120 words, name one practical next move, and ask at most one essential follow-up question.
 - Start with a direct 1-2 sentence counsel paragraph before any heading.
 - Use 2-4 short section headings with "###" markdown headings. Choose natural headings such as "Read the Terrain", "The Hidden Dynamic", "Your Next Move", "What to Avoid", or "Strategic Reminder".
