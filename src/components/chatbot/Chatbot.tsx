@@ -659,9 +659,6 @@ export default function Chatbot() {
               <Menu size={isMobile ? 20 : 22} />
             </SidebarTrigger>
           )}
-          <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-primary shadow-sm sm:flex">
-            <BrainCircuit size={18} />
-          </div>
           <div className="min-w-0">
             <h1
               className={cn(
