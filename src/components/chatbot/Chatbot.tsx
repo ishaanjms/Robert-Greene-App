@@ -42,6 +42,7 @@ export type ChatbotModel =
 
 const TONE_STORAGE_KEY = 'greeneCounselTonePreference';
 const DEPTH_MODE_STORAGE_KEY = 'greeneCounselDepthPreference';
+const OPENING_PROMPT_STORAGE_KEY = 'greeneCounselLastOpeningPrompt';
 export const MODEL_STORAGE_KEY = 'greeneCounselModelPreference';
 export const MODEL_CHANGE_EVENT = 'greeneCounselModelChanged';
 export const CONVERSATION_HISTORY_STORAGE_KEY = 'greeneCounselConversationHistory';
@@ -92,6 +93,22 @@ export const CHATBOT_MODEL_OPTIONS: Array<{
 ];
 const TYPING_SPEED_MS = 2; // Milliseconds per character
 const QUOTE_ROTATION_MS = 6000;
+const OPENING_PROMPTS = [
+  'Let’s think this through',
+  'Let’s unpack this',
+  'Let’s make sense of it',
+  'Let’s look closer',
+  'Let’s examine this',
+  'Let’s work through it',
+  'Let’s find the pattern',
+  'Let’s read the situation',
+  'Let’s see what’s really happening',
+  'Let’s understand the dynamic',
+  'Let’s get to the core',
+  'Let’s look beneath the surface',
+  'Let’s figure out what matters',
+  'Let’s find your next move',
+];
 const LOADING_QUOTES: Array<{ author: string; text: string }> = [
   { author: 'Sun Tzu', text: 'All warfare is based on deception.' },
   { author: 'Voltaire', text: 'Lord, protect me from my friends; I can take care of my enemies.' },
@@ -193,6 +210,25 @@ const trimTitle = (title: string) => {
   return trimmed || `${title.slice(0, TITLE_MAX_LENGTH - 3).trim()}...`;
 };
 
+const getRandomIndex = (length: number) => {
+  if (typeof globalThis.crypto?.getRandomValues === 'function') {
+    const values = new Uint32Array(1);
+    globalThis.crypto.getRandomValues(values);
+    return values[0] % length;
+  }
+
+  return Math.floor(Math.random() * length);
+};
+
+const getNextOpeningPrompt = () => {
+  const lastPrompt = localStorage.getItem(OPENING_PROMPT_STORAGE_KEY);
+  const availablePrompts = OPENING_PROMPTS.filter(prompt => prompt !== lastPrompt);
+  const promptPool = availablePrompts.length ? availablePrompts : OPENING_PROMPTS;
+  const nextPrompt = promptPool[getRandomIndex(promptPool.length)];
+  localStorage.setItem(OPENING_PROMPT_STORAGE_KEY, nextPrompt);
+  return nextPrompt;
+};
+
 const generateConversationTitle = (text: string) => {
   const normalized = text
     .toLowerCase()
@@ -235,6 +271,7 @@ export default function Chatbot() {
   const [isClientInitialized, setIsClientInitialized] = useState(false);
   const [conversationContext, setConversationContext] = useState<string>('Awaiting topic');
   const [activeQuoteIndex, setActiveQuoteIndex] = useState(0);
+  const [openingPrompt, setOpeningPrompt] = useState(OPENING_PROMPTS[0]);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -289,6 +326,7 @@ export default function Chatbot() {
       setConversationContext(storedTitle.trim());
     }
 
+    setOpeningPrompt(getNextOpeningPrompt());
     setIsClientInitialized(true);
     inputRef.current?.focus();
   }, []);
@@ -521,7 +559,7 @@ export default function Chatbot() {
       <Input
         ref={inputRef}
         type="text"
-        placeholder="Describe your situation..."
+        placeholder="Tell me what happened, who’s involved, and what you’re trying to figure out…"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         className="h-11 flex-grow rounded-full border-0 bg-transparent px-3 text-base text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -623,7 +661,9 @@ export default function Chatbot() {
         <main className="flex flex-grow items-center justify-center px-4 pb-20">
           <div className="w-full max-w-3xl">
             <div className="mb-7 text-center">
-              <h2 className="text-3xl font-normal text-foreground sm:text-4xl">What are you navigating?</h2>
+              <h2 className="min-h-[2.5em] text-3xl font-normal leading-tight text-foreground transition-opacity sm:min-h-[1.25em] sm:text-4xl">
+                {openingPrompt}
+              </h2>
             </div>
             {renderComposer('center')}
           </div>
