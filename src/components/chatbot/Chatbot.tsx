@@ -548,18 +548,20 @@ export default function Chatbot() {
     return () => window.clearInterval(intervalId);
   }, [isLoading, hasTypingMessage]);
 
-const renderComposer = (placement: 'center' | 'footer') => (
+  const renderComposer = (placement: 'center' | 'footer') => (
     <form
       onSubmit={handleSubmit}
       className={cn(
-        "composer-focus-glow flex w-full items-center gap-2 rounded-full border border-white/10 bg-black/25 p-1.5 shadow-2xl shadow-black/25 backdrop-blur-md",
-        placement === 'center' && "bg-black/30"
+        "composer-focus-glow flex w-full items-center gap-2 rounded-full border p-1.5 backdrop-blur-md",
+        placement === 'center'
+          ? "border-white/10 bg-black/30 shadow-2xl shadow-black/25"
+          : "border-white/[0.08] bg-white/[0.07] shadow-xl shadow-black/20"
       )}
     >
       <Input
         ref={inputRef}
         type="text"
-        placeholder={placement === 'center' ? "Tell me what happened, who’s involved, and what you’re trying to figure out…" : "Tell me more…"}
+        placeholder={placement === 'center' ? "What happened, who’s involved, or what feels unclear?" : "Tell me more…"}
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         className="h-11 flex-grow rounded-full border-0 bg-transparent px-3 text-base text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -592,7 +594,7 @@ const renderComposer = (placement: 'center' | 'footer') => (
 
   return (
     <div className="app-shell-bg flex h-screen w-full flex-col overflow-hidden text-foreground">
-      <header className="surface-glass flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-3 py-3 sm:px-5">
+      <header className="flex shrink-0 items-center justify-between gap-3 bg-transparent px-3 py-4 sm:px-5 sm:py-5">
         <div className="flex min-w-0 items-center space-x-2 sm:space-x-3">
           {isMobile && (
             <SidebarTrigger
@@ -670,8 +672,8 @@ const renderComposer = (placement: 'center' | 'footer') => (
         </main>
       ) : (
         <>
-          <ScrollArea className="flex-grow px-3 py-5 sm:px-5 sm:py-8" ref={scrollAreaRef}>
-            <div className="mx-auto w-full max-w-3xl px-1 py-2 sm:px-4 sm:py-4">
+          <ScrollArea className="flex-grow px-3 pt-5 sm:px-5 sm:pt-8" ref={scrollAreaRef}>
+            <div className="mx-auto w-full max-w-3xl px-1 pb-6 pt-2 sm:px-4 sm:pb-8 sm:pt-4">
               {messages.map((msg) => (
                 <MessageBubble key={msg.id} message={msg} />
               ))}
@@ -696,7 +698,7 @@ const renderComposer = (placement: 'center' | 'footer') => (
             </div>
           </ScrollArea>
 
-          <footer className="surface-glass shrink-0 border-t border-white/10 px-3 py-3 sm:px-5 sm:py-4">
+          <footer className="shrink-0 bg-transparent px-3 pb-5 pt-2 sm:px-5 sm:pb-6 sm:pt-3">
             <div className="mx-auto max-w-3xl">
               {renderComposer('footer')}
             </div>

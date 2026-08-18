@@ -49,7 +49,177 @@ const huggingFaceModelIds: Partial<Record<PhilosophicalGuidanceInput['model'], s
   'huggingface-meta-llama-3-1-405b-instruct': 'meta-llama/Llama-3.1-405B-Instruct',
 };
 
+const getSocialIntentResponse = (message: string): PhilosophicalGuidanceOutput | null => {
+  const normalized = message
+    .toLowerCase()
+    .replace(/[^\w\s']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!normalized) return null;
+
+  const words = normalized.split(' ');
+  const hasOnlySocialLength = words.length <= 6;
+
+  if (
+    hasOnlySocialLength &&
+    /^(hi|hii|hello|hey|heyy|yo|sup|good morning|good afternoon|good evening)$/.test(normalized)
+  ) {
+    return {
+      advice: "I'm here. What happened, who's involved, or what feels unclear?",
+    };
+  }
+
+  if (
+    hasOnlySocialLength &&
+    /^(thanks|thank you|thank u|thx|ty|appreciate it|that helped|thanks a lot|thank you so much)$/.test(normalized)
+  ) {
+    return {
+      advice: "You're welcome. Keep watching the pattern, not just the event.",
+    };
+  }
+
+  if (
+    hasOnlySocialLength &&
+    /^(bye|goodbye|see you|see ya|talk later|good night|goodnight|gn|catch you later)$/.test(normalized)
+  ) {
+    return {
+      advice: 'Until next time. Step back, observe, then move with intention.',
+    };
+  }
+
+  if (
+    words.length <= 7 &&
+    /^(help|help me|can you help|can you help me|could you help|could you help me|i need help|need help)$/.test(normalized)
+  ) {
+    return {
+      advice: "Yes. Tell me what happened, who's involved, and what you're trying to understand.",
+    };
+  }
+
+  return null;
+};
+
+const CLARIFYING_RESPONSES = [
+  "I'm here. What happened, who's involved, or what feels unclear?",
+  "Yes. Tell me what happened, who's involved, and what you're trying to understand.",
+  "What happened, who's involved, and what are you trying to understand?",
+  'Is this about a person, a decision, or your own next move?',
+  'What changed recently: their behavior, your last interaction, or the expectations between you?',
+  'What changed recently at work: their behavior, your role, or the pressure around a decision?',
+  'What are the options in front of you, and what outcome are you trying to protect?',
+  'What triggered the conflict, and what response are you considering now?',
+  'What feels most uncertain: their motive, your leverage, or your next move?',
+];
+
+const normalizeMessage = (message: string) =>
+  message
+    .toLowerCase()
+    .replace(/[^\w\s']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const hasRecentlyAskedForContext = (history?: PhilosophicalGuidanceInput['conversationHistory']) => {
+  const previousBotMessage = [...(history ?? [])]
+    .reverse()
+    .find(message => message.sender === 'bot');
+
+  return Boolean(
+    previousBotMessage &&
+      CLARIFYING_RESPONSES.some(response => previousBotMessage.text.trim() === response)
+  );
+};
+
+const getContextDepthScore = (normalized: string) => {
+  let score = 0;
+
+  if (/\b(boss|manager|friend|partner|girlfriend|boyfriend|wife|husband|ex|coworker|colleague|client|team|parent|family|he|she|they|we)\b/.test(normalized)) {
+    score += 1;
+  }
+
+  if (/\b(said|told|asked|did|ignored|blocked|left|lied|fired|promoted|rejected|argued|fought|changed|happened|texted|called|met)\b/.test(normalized)) {
+    score += 1;
+  }
+
+  if (/\b(want|need|trying|should|decide|choose|respond|protect|understand|figure|afraid|scared|worried|confused|unclear)\b/.test(normalized)) {
+    score += 1;
+  }
+
+  if (/\b(after|because|when|but|however|although|while)\b/.test(normalized)) {
+    score += 1;
+  }
+
+  return score;
+};
+
+const getClarifyingResponse = (input: PhilosophicalGuidanceInput): PhilosophicalGuidanceOutput | null => {
+  if (hasRecentlyAskedForContext(input.conversationHistory)) return null;
+
+  const normalized = normalizeMessage(input.situation);
+  if (!normalized) return null;
+
+  const words = normalized.split(' ');
+  const contextScore = getContextDepthScore(normalized);
+  const isVeryShort = words.length <= 5;
+  const isThin = words.length <= 11 && contextScore < 2;
+  const isGenericAsk = /^(what should i do|what do i do|i don't know what to do|idk what to do|i am confused|i'm confused|im confused|i feel lost|i'm lost|im lost|i am stuck|i'm stuck|im stuck|advise me|give me advice)$/.test(normalized);
+
+  if (!isVeryShort && !isThin && !isGenericAsk) return null;
+
+  if (/\b(boss|manager|coworker|colleague|client|team|work|job|office|career)\b/.test(normalized)) {
+    return {
+      advice: 'What changed recently at work: their behavior, your role, or the pressure around a decision?',
+    };
+  }
+
+  if (/\b(friend|partner|girlfriend|boyfriend|wife|husband|ex|dating|relationship|family)\b/.test(normalized)) {
+    return {
+      advice: 'What changed recently: their behavior, your last interaction, or the expectations between you?',
+    };
+  }
+
+  if (/\b(decision|choose|choice|option|options|decide|path)\b/.test(normalized)) {
+    return {
+      advice: 'What are the options in front of you, and what outcome are you trying to protect?',
+    };
+  }
+
+  if (/\b(conflict|fight|argument|tension|angry|mad|upset)\b/.test(normalized)) {
+    return {
+      advice: 'What triggered the conflict, and what response are you considering now?',
+    };
+  }
+
+  if (/\b(confused|unclear|lost|stuck|unsure|overthinking)\b/.test(normalized)) {
+    return {
+      advice: 'Is this about a person, a decision, or your own next move?',
+    };
+  }
+
+  if (/\b(weird|distant|cold|different|changed)\b/.test(normalized)) {
+    return {
+      advice: 'What feels most uncertain: their motive, your leverage, or your next move?',
+    };
+  }
+
+  return {
+    advice: "What happened, who's involved, and what are you trying to understand?",
+  };
+};
+
 export async function getPhilosophicalGuidance(input: PhilosophicalGuidanceInput): Promise<PhilosophicalGuidanceOutput> {
+  const socialIntentResponse = getSocialIntentResponse(input.situation);
+
+  if (socialIntentResponse) {
+    return socialIntentResponse;
+  }
+
+  const clarifyingResponse = getClarifyingResponse(input);
+
+  if (clarifyingResponse) {
+    return clarifyingResponse;
+  }
+
   if (input.model.startsWith('huggingface-')) {
     return getHuggingFaceGuidance(input);
   }
@@ -95,6 +265,7 @@ Depth:
 Selected depthMode: ${input.depthMode}
 
 Format every answer for easy reading in markdown:
+- If the user gives very little context after you have already asked for clarification, do not write a long general essay. Give a brief directional read in under 120 words, name one practical next move, and ask at most one essential follow-up question.
 - Start with a direct 1-2 sentence counsel paragraph before any heading.
 - Use 2-4 short section headings with "###" markdown headings.
 - Put every "###" heading on its own line, with a blank line before and after it.
@@ -215,6 +386,7 @@ The user has also requested guidance with a "{{{depthMode}}}" knowledge depth.
 - If depthMode is "tactical": Provide a detailed, step-by-step strategic plan. Break down the approach into clear, sequential actions. Be specific and prescriptive, as if outlining a battle plan for a complex scenario.
 
 Format every answer for easy reading in markdown:
+- If the user gives very little context after you have already asked for clarification, do not write a long general essay. Give a brief directional read in under 120 words, name one practical next move, and ask at most one essential follow-up question.
 - Start with a direct 1-2 sentence counsel paragraph before any heading.
 - Use 2-4 short section headings with "###" markdown headings. Choose natural headings such as "Read the Terrain", "The Hidden Dynamic", "Your Next Move", "What to Avoid", or "Strategic Reminder".
 - Put every "###" heading on its own line, with a blank line before and after it.
