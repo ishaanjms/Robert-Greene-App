@@ -55,6 +55,19 @@ const ConversationTitleOutputSchema = z.object({
 });
 export type ConversationTitleOutput = z.infer<typeof ConversationTitleOutputSchema>;
 
+const ClarifyingQuestionInputSchema = z.object({
+  situation: PhilosophicalGuidanceInputSchema.shape.situation,
+  model: PhilosophicalGuidanceInputSchema.shape.model,
+  fallbackQuestion: z.string().describe('A safe local fallback question if model generation fails.'),
+  conversationHistory: PhilosophicalGuidanceInputSchema.shape.conversationHistory,
+});
+type ClarifyingQuestionInput = z.infer<typeof ClarifyingQuestionInputSchema>;
+
+const ClarifyingQuestionOutputSchema = z.object({
+  question: z.string().describe('One concise, personalized follow-up question.'),
+});
+type ClarifyingQuestionOutput = z.infer<typeof ClarifyingQuestionOutputSchema>;
+
 const huggingFaceModelIds: Partial<Record<PhilosophicalGuidanceInput['model'], string>> = {
   'huggingface-openai-gpt-oss-120b': 'openai/gpt-oss-120b',
   'huggingface-deepseek-v4-pro': 'deepseek-ai/DeepSeek-V4-Pro',
@@ -151,6 +164,25 @@ const sanitizeConversationTitle = (title: string, fallbackTitle: string) => {
   return trimmed;
 };
 
+const sanitizeClarifyingQuestion = (question: string, fallbackQuestion: string) => {
+  const cleaned = question
+    .replace(/^["'`]+|["'`]+$/g, '')
+    .replace(/^(question|follow-up|clarifying question):\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleaned) return fallbackQuestion;
+
+  const firstQuestion = cleaned.match(/[^?]*\?/)?.[0]?.trim() ?? cleaned;
+  const words = firstQuestion.split(' ').filter(Boolean);
+
+  if (!firstQuestion.endsWith('?') || words.length < 4 || words.length > 24) {
+    return fallbackQuestion;
+  }
+
+  return firstQuestion;
+};
+
 export async function generateHuggingFaceConversationTitle(
   input: ConversationTitleInput
 ): Promise<ConversationTitleOutput> {
@@ -216,6 +248,102 @@ export async function generateHuggingFaceConversationTitle(
   }
 }
 
+const generateHuggingFaceClarifyingQuestion = async (
+  input: ClarifyingQuestionInput
+): Promise<ClarifyingQuestionOutput> => {
+  const token =
+    process.env.HUGGINGFACE_API_KEY ||
+    process.env.HUGGING_FACE_API_KEY ||
+    process.env.HF_TOKEN;
+
+  if (!token) {
+    return {question: input.fallbackQuestion};
+  }
+
+  const modelId = huggingFaceModelIds[input.model];
+
+  if (!modelId) {
+    return {question: input.fallbackQuestion};
+  }
+
+  const history = input.conversationHistory?.length
+    ? input.conversationHistory
+        .slice(-6)
+        .map(message => `${message.sender === 'user' ? 'User' : 'Robert Greene'}: ${message.text}`)
+        .join('\n')
+    : 'No prior context.';
+
+  try {
+    const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: modelId,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You write one concise clarifying question for a strategic advice chatbot. Ask for the single most important missing detail. Be specific to the user wording. Return only one question. No preface, bullets, headings, or advice. Maximum 18 words.',
+          },
+          {
+            role: 'user',
+            content: `Conversation context:\n${history}\n\nUser's thin prompt:\n${input.situation}\n\nLocal fallback question:\n${input.fallbackQuestion}`,
+          },
+        ],
+        temperature: 0.35,
+        max_tokens: 40,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Hugging Face clarifying question failed:', response.status, errorText);
+      return {question: input.fallbackQuestion};
+    }
+
+    const data = await response.json();
+    const rawQuestion = data?.choices?.[0]?.message?.content;
+
+    if (typeof rawQuestion !== 'string') {
+      return {question: input.fallbackQuestion};
+    }
+
+    return {
+      question: sanitizeClarifyingQuestion(rawQuestion, input.fallbackQuestion),
+    };
+  } catch (error) {
+    console.error('Hugging Face clarifying question failed:', error);
+    return {question: input.fallbackQuestion};
+  }
+};
+
+const generateClarifyingQuestion = async (
+  input: ClarifyingQuestionInput
+): Promise<ClarifyingQuestionOutput> => {
+  const parsedInput = ClarifyingQuestionInputSchema.parse(input);
+
+  if (parsedInput.model.startsWith('huggingface-')) {
+    return generateHuggingFaceClarifyingQuestion(parsedInput);
+  }
+
+  if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+    return {question: parsedInput.fallbackQuestion};
+  }
+
+  try {
+    const {output} = await clarifyingQuestionPrompt(parsedInput);
+    return {
+      question: sanitizeClarifyingQuestion(output?.question ?? '', parsedInput.fallbackQuestion),
+    };
+  } catch (error) {
+    console.error('Gemini clarifying question failed:', error);
+    return {question: parsedInput.fallbackQuestion};
+  }
+};
+
 const getPreviousBotMessage = (history?: PhilosophicalGuidanceInput['conversationHistory']) =>
   [...(history ?? [])]
     .reverse()
@@ -266,7 +394,7 @@ const getContextDepthScore = (normalized: string) => {
   return score;
 };
 
-const getClarifyingResponse = (input: PhilosophicalGuidanceInput): PhilosophicalGuidanceOutput | null => {
+const getClarifyingFallbackQuestion = (input: PhilosophicalGuidanceInput): string | null => {
   const normalized = normalizeMessage(input.situation);
   if (!normalized) return null;
   if (hasRecentlyAskedForContext(input.conversationHistory)) return null;
@@ -281,44 +409,30 @@ const getClarifyingResponse = (input: PhilosophicalGuidanceInput): Philosophical
   if (!isVeryShort && !isThin && !isGenericAsk) return null;
 
   if (/\b(boss|manager|coworker|colleague|client|team|work|job|office|career)\b/.test(normalized)) {
-    return {
-      advice: 'What changed recently at work: their behavior, your role, or the pressure around a decision?',
-    };
+    return 'What changed recently at work: their behavior, your role, or the pressure around a decision?';
   }
 
   if (/\b(friend|partner|girlfriend|boyfriend|wife|husband|ex|dating|relationship|family)\b/.test(normalized)) {
-    return {
-      advice: 'What changed recently: their behavior, your last interaction, or the expectations between you?',
-    };
+    return 'What changed recently: their behavior, your last interaction, or the expectations between you?';
   }
 
   if (/\b(decision|choose|choice|option|options|decide|path)\b/.test(normalized)) {
-    return {
-      advice: 'What are the options in front of you, and what outcome are you trying to protect?',
-    };
+    return 'What are the options in front of you, and what outcome are you trying to protect?';
   }
 
   if (/\b(conflict|fight|argument|tension|angry|mad|upset)\b/.test(normalized)) {
-    return {
-      advice: 'What triggered the conflict, and what response are you considering now?',
-    };
+    return 'What triggered the conflict, and what response are you considering now?';
   }
 
   if (/\b(confused|unclear|lost|stuck|unsure|overthinking)\b/.test(normalized)) {
-    return {
-      advice: 'Is this about a person, a decision, or your own next move?',
-    };
+    return 'Is this about a person, a decision, or your own next move?';
   }
 
   if (/\b(weird|distant|cold|different|changed)\b/.test(normalized)) {
-    return {
-      advice: 'What feels most uncertain: their motive, your leverage, or your next move?',
-    };
+    return 'What feels most uncertain: their motive, your leverage, or your next move?';
   }
 
-  return {
-    advice: "Give me one concrete scene: what happened most recently, and what are you unsure how to respond to?",
-  };
+  return "Give me one concrete scene: what happened most recently, and what are you unsure how to respond to?";
 };
 
 export async function getPhilosophicalGuidance(input: PhilosophicalGuidanceInput): Promise<PhilosophicalGuidanceOutput> {
@@ -328,10 +442,17 @@ export async function getPhilosophicalGuidance(input: PhilosophicalGuidanceInput
     return socialIntentResponse;
   }
 
-  const clarifyingResponse = getClarifyingResponse(input);
+  const fallbackQuestion = getClarifyingFallbackQuestion(input);
 
-  if (clarifyingResponse) {
-    return clarifyingResponse;
+  if (fallbackQuestion) {
+    const {question} = await generateClarifyingQuestion({
+      situation: input.situation,
+      model: input.model,
+      fallbackQuestion,
+      conversationHistory: input.conversationHistory,
+    });
+
+    return {advice: question};
   }
 
   if (input.model.startsWith('huggingface-')) {
@@ -468,6 +589,38 @@ const getHuggingFaceGuidance = async (input: PhilosophicalGuidanceInput): Promis
     };
   }
 };
+
+const clarifyingQuestionPrompt = ai.definePrompt({
+  name: 'clarifyingQuestionPrompt',
+  input: {schema: ClarifyingQuestionInputSchema},
+  output: {schema: ClarifyingQuestionOutputSchema},
+  prompt: `You write one concise clarifying question for Greene's Counsel, a strategic advice chatbot.
+
+The user's prompt is too thin for useful advice. Ask for the single most important missing detail.
+
+Rules:
+- Return only one question.
+- Maximum 18 words.
+- Be specific to the user's wording.
+- Do not give advice yet.
+- Do not use headings, bullets, labels, or prefaces.
+- Do not ask a generic intake question unless the fallback is truly the best option.
+
+{{#if conversationHistory.length}}
+Recent conversation:
+{{#each conversationHistory}}
+{{#if this.isUser}}User: {{this.text}}{{else}}Robert Greene: {{this.text}}{{/if}}
+{{/each}}
+{{else}}
+No prior context.
+{{/if}}
+
+User's thin prompt:
+{{{situation}}}
+
+Local fallback question:
+{{{fallbackQuestion}}}`,
+});
 
 const prompt = ai.definePrompt({
   name: 'philosophicalGuidancePrompt',
