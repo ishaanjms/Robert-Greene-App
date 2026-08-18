@@ -6,6 +6,7 @@
  * @fileOverview A philosophical guidance AI agent based on Robert Greene's teachings.
  *
  * - getPhilosophicalGuidance - A function that provides strategic guidance based on user input, preferred tone, desired depth, and conversation history.
+ * - generateHuggingFaceConversationTitle - A function that creates a concise chat title from the user's first real situation.
  * - PhilosophicalGuidanceInput - The input type for the getPhilosophicalGuidance function.
  * - PhilosophicalGuidanceOutput - The return type for the getPhilosophicalGuidance function.
  */
@@ -42,12 +43,25 @@ const PhilosophicalGuidanceOutputSchema = z.object({
 });
 export type PhilosophicalGuidanceOutput = z.infer<typeof PhilosophicalGuidanceOutputSchema>;
 
+const ConversationTitleInputSchema = z.object({
+  situation: z.string().describe('The first substantial user message in the conversation.'),
+  fallbackTitle: z.string().describe('A locally generated fallback title to use if title generation fails.'),
+  model: PhilosophicalGuidanceInputSchema.shape.model.optional().describe('The selected model. Hugging Face models are used directly; other models fall back to the default Hugging Face title model.'),
+});
+export type ConversationTitleInput = z.infer<typeof ConversationTitleInputSchema>;
+
+const ConversationTitleOutputSchema = z.object({
+  title: z.string().describe('A concise 2-5 word conversation title.'),
+});
+export type ConversationTitleOutput = z.infer<typeof ConversationTitleOutputSchema>;
+
 const huggingFaceModelIds: Partial<Record<PhilosophicalGuidanceInput['model'], string>> = {
   'huggingface-openai-gpt-oss-120b': 'openai/gpt-oss-120b',
   'huggingface-deepseek-v4-pro': 'deepseek-ai/DeepSeek-V4-Pro',
   'huggingface-nvidia-nemotron-3-ultra-550b': 'nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4',
   'huggingface-meta-llama-3-1-405b-instruct': 'meta-llama/Llama-3.1-405B-Instruct',
 };
+const DEFAULT_HUGGING_FACE_TITLE_MODEL_ID = 'openai/gpt-oss-120b';
 
 const getSocialIntentResponse = (message: string): PhilosophicalGuidanceOutput | null => {
   const normalized = message
@@ -118,6 +132,89 @@ const normalizeMessage = (message: string) =>
     .replace(/[^\w\s']/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
+const sanitizeConversationTitle = (title: string, fallbackTitle: string) => {
+  const cleaned = title
+    .replace(/^["'`]+|["'`]+$/g, '')
+    .replace(/^title:\s*/i, '')
+    .replace(/[.!?]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleaned) return fallbackTitle;
+
+  const words = cleaned.split(' ').filter(Boolean).slice(0, 5);
+  const trimmed = words.join(' ');
+
+  if (trimmed.length < 3 || trimmed.length > 42) return fallbackTitle;
+
+  return trimmed;
+};
+
+export async function generateHuggingFaceConversationTitle(
+  input: ConversationTitleInput
+): Promise<ConversationTitleOutput> {
+  const parsedInput = ConversationTitleInputSchema.parse(input);
+  const token =
+    process.env.HUGGINGFACE_API_KEY ||
+    process.env.HUGGING_FACE_API_KEY ||
+    process.env.HF_TOKEN;
+
+  if (!token) {
+    return {title: parsedInput.fallbackTitle};
+  }
+
+  const modelId =
+    parsedInput.model && parsedInput.model.startsWith('huggingface-')
+      ? huggingFaceModelIds[parsedInput.model] ?? DEFAULT_HUGGING_FACE_TITLE_MODEL_ID
+      : DEFAULT_HUGGING_FACE_TITLE_MODEL_ID;
+
+  try {
+    const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: modelId,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Create a concise chat title for a strategic advice conversation. Return only the title. Use 2 to 5 words. No quotes, punctuation, labels, emojis, or full sentence.',
+          },
+          {
+            role: 'user',
+            content: `User situation:\n${parsedInput.situation}`,
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 18,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Hugging Face title request failed:', response.status, errorText);
+      return {title: parsedInput.fallbackTitle};
+    }
+
+    const data = await response.json();
+    const rawTitle = data?.choices?.[0]?.message?.content;
+
+    if (typeof rawTitle !== 'string') {
+      return {title: parsedInput.fallbackTitle};
+    }
+
+    return {
+      title: sanitizeConversationTitle(rawTitle, parsedInput.fallbackTitle),
+    };
+  } catch (error) {
+    console.error('Hugging Face title generation failed:', error);
+    return {title: parsedInput.fallbackTitle};
+  }
+}
 
 const getPreviousBotMessage = (history?: PhilosophicalGuidanceInput['conversationHistory']) =>
   [...(history ?? [])]

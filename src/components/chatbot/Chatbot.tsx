@@ -5,7 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MessageBubble from './MessageBubble';
-import { getPhilosophicalGuidance, type PhilosophicalGuidanceInput } from '@/ai/flows/philosophical-guidance';
+import {
+  generateHuggingFaceConversationTitle,
+  getPhilosophicalGuidance,
+  type PhilosophicalGuidanceInput,
+} from '@/ai/flows/philosophical-guidance';
 import { BrainCircuit, Send, Menu, SlidersHorizontal, Layers } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { cn } from '@/lib/utils';
@@ -261,6 +265,21 @@ const generateConversationTitle = (text: string) => {
   return keywords.length ? trimTitle(toTitleCase(keywords.join(' '))) : 'Strategic Counsel';
 };
 
+const isConversationTitleCandidate = (text: string) => {
+  const normalized = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!normalized) return false;
+
+  const words = normalized.split(' ').filter(Boolean);
+  if (words.length < 5) return false;
+
+  return !/^(hi|hello|hey|yo|sup|thanks|thank you|bye|goodbye|can you help me|could you help me|help me|i need help|need help|yes|yes please|sure|ok|okay|yeah|yep)$/.test(normalized);
+};
+
 export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -275,6 +294,7 @@ export default function Chatbot() {
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const titleRequestMessageIdRef = useRef<string | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -519,22 +539,48 @@ export default function Chatbot() {
     }
   };
 
-  // Lock the conversation context to the first meaningful (>=3 words) user message.
+  // Title the conversation from the first substantial user situation.
   useEffect(() => {
     if (conversationContext !== 'Awaiting topic') return; // already set, do not change
     const firstMeaningfulUser = messages.find(
-      (msg) => msg.sender === 'user' && typeof msg.text === 'string' && msg.text.trim().split(/\s+/).filter(Boolean).length >= 3
+      (msg) => msg.sender === 'user' && typeof msg.text === 'string' && isConversationTitleCandidate(msg.text)
     );
     if (firstMeaningfulUser?.text) {
-      const generatedTitle = generateConversationTitle(firstMeaningfulUser.text.trim());
-      setConversationContext(generatedTitle);
-      localStorage.setItem(CONVERSATION_TITLE_STORAGE_KEY, generatedTitle);
+      const fallbackTitle = generateConversationTitle(firstMeaningfulUser.text.trim());
+      titleRequestMessageIdRef.current = firstMeaningfulUser.id;
+      setConversationContext(fallbackTitle);
+      localStorage.setItem(CONVERSATION_TITLE_STORAGE_KEY, fallbackTitle);
+
+      generateHuggingFaceConversationTitle({
+        situation: firstMeaningfulUser.text.trim(),
+        fallbackTitle,
+        model: currentModel,
+      })
+        .then(({ title }) => {
+          if (titleRequestMessageIdRef.current !== firstMeaningfulUser.id) return;
+
+          setConversationContext(previousTitle => {
+            if (previousTitle !== fallbackTitle && previousTitle !== 'Awaiting topic') {
+              return previousTitle;
+            }
+
+            localStorage.setItem(CONVERSATION_TITLE_STORAGE_KEY, title);
+            return title;
+          });
+        })
+        .catch(error => {
+          console.error('Failed to generate conversation title:', error);
+        });
     }
-  }, [messages, conversationContext]);
+  }, [messages, conversationContext, currentModel]);
 
   const hasTypingMessage = messages.some(msg => msg.isTyping);
   const isInputDisabled = isLoading || hasTypingMessage;
   const isConversationEmpty = messages.length === 0;
+  const displayedConversationTitle =
+    isConversationEmpty || conversationContext === 'Awaiting topic'
+      ? "Greene's Counsel"
+      : conversationContext;
   const activeQuote = LOADING_QUOTES[activeQuoteIndex % LOADING_QUOTES.length];
 
   useEffect(() => {
@@ -615,9 +661,9 @@ export default function Chatbot() {
                 "font-bold",
                 "truncate",
               )}
-              title={isConversationEmpty ? "Greene's Counsel" : conversationContext}
+              title={displayedConversationTitle}
             >
-              {isConversationEmpty ? "Greene's Counsel" : conversationContext}
+              {displayedConversationTitle}
             </h1>
           </div>
         </div>
