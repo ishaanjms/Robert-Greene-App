@@ -75,6 +75,40 @@ const huggingFaceModelIds: Partial<Record<PhilosophicalGuidanceInput['model'], s
   'huggingface-meta-llama-3-1-405b-instruct': 'meta-llama/Llama-3.1-405B-Instruct',
 };
 const DEFAULT_HUGGING_FACE_TITLE_MODEL_ID = 'openai/gpt-oss-120b';
+const GREETING_RESPONSES = [
+  'Let’s look at it clearly. What happened?',
+  'Start with the moment that made you pause.',
+  'What situation needs a second read?',
+  'Tell me what changed, and who is part of it.',
+  'What dynamic are you trying to understand?',
+  'What are you trying to make sense of?',
+  'Bring me the scene. What feels off?',
+  'What decision, conflict, or behavior are we examining?',
+  'What feels unclear: their motive, your move, or the stakes?',
+  'Tell me the situation. I’ll help you find the pattern.',
+  'What outcome are you trying to protect?',
+  'What happened most recently?',
+  'Where do you feel the pressure in this situation?',
+  'What response are you unsure about?',
+  'Who is involved, and what changed between you?',
+];
+const CLOSING_RESPONSES = [
+  'Take care. Step back, observe clearly, and move only when the advantage is calm.',
+  'Until next time. Let the dust settle before you decide what deserves your energy.',
+  'Go carefully. A composed mind sees more than a wounded one.',
+  'Take the pause with you. Clarity often arrives after the first impulse passes.',
+  'Rest the matter for now. Return to it only when you can see the pattern cleanly.',
+  'Move slowly. The strongest response is often the one chosen after silence.',
+  'Leave the field calmly. Watch what people reveal when you stop reacting.',
+  'Take care. Protect your peace, then protect your position.',
+  'Step away for now. The next move should come from judgment, not pressure.',
+  'Goodbye for now. Keep your eyes on the pattern, not just the provocation.',
+];
+
+const getLocalResponse = (responses: string[], seed: string) => {
+  const charTotal = Array.from(seed).reduce((total, char) => total + char.charCodeAt(0), 0);
+  return responses[charTotal % responses.length];
+};
 
 const getSocialIntentResponse = (message: string): PhilosophicalGuidanceOutput | null => {
   const normalized = message
@@ -102,13 +136,13 @@ const getSocialIntentResponse = (message: string): PhilosophicalGuidanceOutput |
     (hasOnlySocialLength && /^(how are you|how r u|how are you doing|how's it going|hows it going|what's good|whats good)$/.test(normalized))
   ) {
     return {
-      advice: "I'm here. What happened, who's involved, or what feels unclear?",
+      advice: getLocalResponse(GREETING_RESPONSES, normalized),
     };
   }
 
   if (isBriefClosing) {
     return {
-      advice: 'Take care. Step back, observe clearly, and move only when the advantage is calm.',
+      advice: getLocalResponse(CLOSING_RESPONSES, normalized),
     };
   }
 
