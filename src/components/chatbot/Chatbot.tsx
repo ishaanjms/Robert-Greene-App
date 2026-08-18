@@ -291,6 +291,7 @@ export default function Chatbot() {
   const [currentModel, setCurrentModel] = useState<ChatbotModel>(DEFAULT_CHATBOT_MODEL);
   const [isClientInitialized, setIsClientInitialized] = useState(false);
   const [conversationContext, setConversationContext] = useState<string>('Awaiting topic');
+  const [isTitleLoading, setIsTitleLoading] = useState(false);
   const [activeQuoteIndex, setActiveQuoteIndex] = useState(0);
   const [openingPrompt, setOpeningPrompt] = useState(OPENING_PROMPTS[0]);
 
@@ -548,10 +549,11 @@ export default function Chatbot() {
       (msg) => msg.sender === 'user' && typeof msg.text === 'string' && isConversationTitleCandidate(msg.text)
     );
     if (firstMeaningfulUser?.text) {
+      if (titleRequestMessageIdRef.current === firstMeaningfulUser.id) return;
+
       const fallbackTitle = generateConversationTitle(firstMeaningfulUser.text.trim());
       titleRequestMessageIdRef.current = firstMeaningfulUser.id;
-      setConversationContext(fallbackTitle);
-      localStorage.setItem(CONVERSATION_TITLE_STORAGE_KEY, fallbackTitle);
+      setIsTitleLoading(true);
 
       generateConversationTitleWithModel({
         situation: firstMeaningfulUser.text.trim(),
@@ -561,17 +563,20 @@ export default function Chatbot() {
         .then(({ title }) => {
           if (titleRequestMessageIdRef.current !== firstMeaningfulUser.id) return;
 
-          setConversationContext(previousTitle => {
-            if (previousTitle !== fallbackTitle && previousTitle !== 'Awaiting topic') {
-              return previousTitle;
-            }
-
-            localStorage.setItem(CONVERSATION_TITLE_STORAGE_KEY, title);
-            return title;
-          });
+          localStorage.setItem(CONVERSATION_TITLE_STORAGE_KEY, title);
+          setConversationContext(title);
         })
         .catch(error => {
           console.error('Failed to generate conversation title:', error);
+          if (titleRequestMessageIdRef.current !== firstMeaningfulUser.id) return;
+
+          localStorage.setItem(CONVERSATION_TITLE_STORAGE_KEY, fallbackTitle);
+          setConversationContext(fallbackTitle);
+        })
+        .finally(() => {
+          if (titleRequestMessageIdRef.current === firstMeaningfulUser.id) {
+            setIsTitleLoading(false);
+          }
         });
     }
   }, [messages, conversationContext, currentModel]);
@@ -580,7 +585,9 @@ export default function Chatbot() {
   const isInputDisabled = isLoading || hasTypingMessage;
   const isConversationEmpty = messages.length === 0;
   const displayedConversationTitle =
-    isConversationEmpty || conversationContext === 'Awaiting topic'
+    isTitleLoading
+      ? 'Naming…'
+      : isConversationEmpty || conversationContext === 'Awaiting topic'
       ? "Greene's Counsel"
       : conversationContext;
   const activeQuote = LOADING_QUOTES[activeQuoteIndex % LOADING_QUOTES.length];
@@ -662,6 +669,7 @@ export default function Chatbot() {
                 isMobile ? "text-base" : "text-lg",
                 "font-bold",
                 "truncate",
+                isTitleLoading && "animate-pulse text-foreground/70",
               )}
               title={displayedConversationTitle}
             >
