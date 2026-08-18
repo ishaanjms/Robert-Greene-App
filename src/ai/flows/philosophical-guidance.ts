@@ -87,31 +87,37 @@ const getSocialIntentResponse = (message: string): PhilosophicalGuidanceOutput |
 
   const words = normalized.split(' ');
   const hasOnlySocialLength = words.length <= 6;
+  const isBriefGreeting =
+    words.length <= 8 &&
+    /\b(hi|hii|hiii|hello|helo|hey|heyy|heyyy|yo|sup|wassup|what's up|whats up|wsp|hiya|howdy|greetings|gm|good morning|good afternoon|good evening|evening|morning|namaste|namaskar|hola|bonjour|hello there|hey there|hi there)\b/.test(normalized);
+  const isBriefClosing =
+    words.length <= 10 &&
+    /\b(bye|byee|goodbye|good bye|good night|goodnight|gn|later|talk later|talk to you later|see you|see ya|see u|cya|catch you|catch you later|that's all|thats all|that is all|all good|done|done for now|i'm done|im done|we're done|were done|no thanks|no thank you|nothing else|that's enough|thats enough|enough for now|stop here|let's stop|lets stop|end chat|end this|close this|peace|peace out)\b/.test(normalized);
+  const isBriefThanks =
+    hasOnlySocialLength &&
+    /\b(thanks|thank you|thank u|thankyou|thx|ty|appreciate it|appreciated|got it|understood|makes sense|that helps|helped)\b/.test(normalized);
 
   if (
-    hasOnlySocialLength &&
-    /^(hi|hii|hello|hey|heyy|yo|sup|good morning|good afternoon|good evening)$/.test(normalized)
+    isBriefGreeting ||
+    (hasOnlySocialLength && /^(how are you|how r u|how are you doing|how's it going|hows it going|what's good|whats good)$/.test(normalized))
   ) {
     return {
       advice: "I'm here. What happened, who's involved, or what feels unclear?",
     };
   }
 
-  if (
-    hasOnlySocialLength &&
-    /^(thanks|thank you|thank u|thx|ty|appreciate it|that helped|thanks a lot|thank you so much)$/.test(normalized)
-  ) {
+  if (isBriefClosing) {
     return {
-      advice: "You're welcome. Keep watching the pattern, not just the event.",
+      advice: 'Take care. Step back, observe clearly, and move only when the advantage is calm.',
     };
   }
 
   if (
-    hasOnlySocialLength &&
-    /^(bye|goodbye|see you|see ya|talk later|good night|goodnight|gn|catch you later)$/.test(normalized)
+    isBriefThanks ||
+    (hasOnlySocialLength && /^(that helped|thanks a lot|thank you so much|got it thanks|ok thanks|okay thanks)$/.test(normalized))
   ) {
     return {
-      advice: 'Until next time. Step back, observe, then move with intention.',
+      advice: "You're welcome. Keep watching the pattern, not just the event.",
     };
   }
 
