@@ -28,12 +28,12 @@ const PhilosophicalGuidanceInputSchema = z.object({
   tone: z.enum(['classic', 'modern']).default('classic').describe('The desired tone of the response. "classic" for metaphor-rich, philosophical language, or "modern" for concise, straightforward guidance.'),
   depthMode: z.enum(['surface', 'philosophical', 'tactical']).default('philosophical').describe('The desired depth of the advice. "surface" for quick tips, "philosophical" for rich insights, or "tactical" for detailed plans.'),
   model: z.enum([
-    'gemini-3-flash',
+    'gemini-3.6-flash',
     'huggingface-openai-gpt-oss-120b',
     'huggingface-deepseek-v4-pro',
     'huggingface-nvidia-nemotron-3-ultra-550b',
     'huggingface-meta-llama-3-1-405b-instruct',
-  ]).default('gemini-3-flash').describe('The model provider and model selected by the user.'),
+  ]).default('gemini-3.6-flash').describe('The model provider and model selected by the user.'),
   conversationHistory: z.array(MessageSchema).optional().describe('The ongoing dialogue history between the user and the chatbot. Used to maintain context and personalize responses.'),
 });
 export type PhilosophicalGuidanceInput = z.infer<typeof PhilosophicalGuidanceInputSchema>;

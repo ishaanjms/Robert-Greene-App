@@ -38,7 +38,7 @@ export interface Message {
 export type ChatbotTone = 'classic' | 'modern';
 export type ChatbotDepthMode = 'surface' | 'philosophical' | 'tactical';
 export type ChatbotModel =
-  | 'gemini-3-flash'
+  | 'gemini-3.6-flash'
   | 'huggingface-openai-gpt-oss-120b'
   | 'huggingface-deepseek-v4-pro'
   | 'huggingface-nvidia-nemotron-3-ultra-550b'
@@ -51,7 +51,7 @@ export const MODEL_STORAGE_KEY = 'greeneCounselModelPreference';
 export const MODEL_CHANGE_EVENT = 'greeneCounselModelChanged';
 export const CONVERSATION_HISTORY_STORAGE_KEY = 'greeneCounselConversationHistory';
 export const CONVERSATION_TITLE_STORAGE_KEY = 'greeneCounselConversationTitle';
-export const DEFAULT_CHATBOT_MODEL: ChatbotModel = 'huggingface-openai-gpt-oss-120b';
+export const DEFAULT_CHATBOT_MODEL: ChatbotModel = 'gemini-3.6-flash';
 export const CHATBOT_MODEL_OPTIONS: Array<{
   value: ChatbotModel;
   label: string;
@@ -88,10 +88,10 @@ export const CHATBOT_MODEL_OPTIONS: Array<{
     description: 'Uses Meta Llama 3.1 405B Instruct through Hugging Face Inference Providers.',
   },
   {
-    value: 'gemini-3-flash',
-    label: 'Gemini 3 Flash',
+    value: 'gemini-3.6-flash',
+    label: 'Gemini 3.6 Flash',
     provider: 'Google AI',
-    modelId: 'gemini-3-flash-preview',
+    modelId: 'gemini-3.6-flash',
     description: 'Uses the Gemini API configured on the server.',
   },
 ];
