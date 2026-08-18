@@ -6,7 +6,7 @@
  * @fileOverview A philosophical guidance AI agent based on Robert Greene's teachings.
  *
  * - getPhilosophicalGuidance - A function that provides strategic guidance based on user input, preferred tone, desired depth, and conversation history.
- * - generateHuggingFaceConversationTitle - A function that creates a concise chat title from the user's first real situation.
+ * - generateConversationTitleWithModel - A function that creates a concise chat title from the user's first real situation.
  * - PhilosophicalGuidanceInput - The input type for the getPhilosophicalGuidance function.
  * - PhilosophicalGuidanceOutput - The return type for the getPhilosophicalGuidance function.
  */
@@ -183,10 +183,27 @@ const sanitizeClarifyingQuestion = (question: string, fallbackQuestion: string) 
   return firstQuestion;
 };
 
-export async function generateHuggingFaceConversationTitle(
+export async function generateConversationTitleWithModel(
   input: ConversationTitleInput
 ): Promise<ConversationTitleOutput> {
   const parsedInput = ConversationTitleInputSchema.parse(input);
+
+  if (!parsedInput.model?.startsWith('huggingface-')) {
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+      return {title: parsedInput.fallbackTitle};
+    }
+
+    try {
+      const {output} = await conversationTitlePrompt(parsedInput);
+      return {
+        title: sanitizeConversationTitle(output?.title ?? '', parsedInput.fallbackTitle),
+      };
+    } catch (error) {
+      console.error('Gemini title generation failed:', error);
+      return {title: parsedInput.fallbackTitle};
+    }
+  }
+
   const token =
     process.env.HUGGINGFACE_API_KEY ||
     process.env.HUGGING_FACE_API_KEY ||
@@ -196,10 +213,7 @@ export async function generateHuggingFaceConversationTitle(
     return {title: parsedInput.fallbackTitle};
   }
 
-  const modelId =
-    parsedInput.model && parsedInput.model.startsWith('huggingface-')
-      ? huggingFaceModelIds[parsedInput.model] ?? DEFAULT_HUGGING_FACE_TITLE_MODEL_ID
-      : DEFAULT_HUGGING_FACE_TITLE_MODEL_ID;
+  const modelId = huggingFaceModelIds[parsedInput.model] ?? DEFAULT_HUGGING_FACE_TITLE_MODEL_ID;
 
   try {
     const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
@@ -214,7 +228,7 @@ export async function generateHuggingFaceConversationTitle(
           {
             role: 'system',
             content:
-              'Create a concise chat title for a strategic advice conversation. Return only the title. Use 2 to 5 words. No quotes, punctuation, labels, emojis, or full sentence.',
+              'Create a concise chat title for a strategic advice conversation. Return only the title. Use 2 to 5 words. No quotes, punctuation, labels, emojis, or full sentence. Capture the core issue instead of copying the user wording.',
           },
           {
             role: 'user',
@@ -620,6 +634,26 @@ User's thin prompt:
 
 Local fallback question:
 {{{fallbackQuestion}}}`,
+});
+
+const conversationTitlePrompt = ai.definePrompt({
+  name: 'conversationTitlePrompt',
+  input: {schema: ConversationTitleInputSchema},
+  output: {schema: ConversationTitleOutputSchema},
+  prompt: `Create a concise chat title for a strategic advice conversation.
+
+Rules:
+- Return only the title.
+- Use 2 to 5 words.
+- No quotes, punctuation, labels, emojis, or full sentence.
+- Capture the core issue instead of copying the user's wording.
+- Prefer specific titles such as "Manager False Allegations" over vague titles such as "Workplace Problem".
+
+User situation:
+{{{situation}}}
+
+Fallback title:
+{{{fallbackTitle}}}`,
 });
 
 const prompt = ai.definePrompt({

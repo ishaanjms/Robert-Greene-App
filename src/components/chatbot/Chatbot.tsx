@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MessageBubble from './MessageBubble';
 import {
-  generateHuggingFaceConversationTitle,
+  generateConversationTitleWithModel,
   getPhilosophicalGuidance,
   type PhilosophicalGuidanceInput,
 } from '@/ai/flows/philosophical-guidance';
@@ -244,6 +244,8 @@ const generateConversationTitle = (text: string) => {
 
   const titlePatterns: Array<[RegExp, string]> = [
     [/\b(job loss|loss of job|loss of my job|lose my job|losing my job|fired|layoff|laid off)\b/, 'Fear of Job Loss'],
+    [/\b(boss|manager|superior)\b.*\b(false allegation|false allegations|accuse|accused|accusation|accusations|blame|blamed)\b|\b(false allegation|false allegations|accuse|accused|accusation|accusations|blame|blamed)\b.*\b(boss|manager|superior)\b/, 'Manager False Allegations'],
+    [/\b(boss|manager|superior)\b.*\b(toxic|mistreat|mistreats|treats me bad|treating me bad|hostile|bully|bullying|harass|harassment)\b|\b(toxic|mistreat|mistreats|treats me bad|treating me bad|hostile|bully|bullying|harass|harassment)\b.*\b(boss|manager|superior)\b/, 'Toxic Manager Dynamic'],
     [/\b(career path|career|profession|promotion)\b.*\b(uncertain|confused|stuck|lost)\b|\b(uncertain|confused|stuck|lost)\b.*\b(career path|career|profession|promotion)\b/, 'Career Uncertainty'],
     [/\b(boss|manager|superior)\b.*\b(power|control|politics|manipulat|conflict|difficult)\b|\b(power|control|politics|manipulat|conflict|difficult)\b.*\b(boss|manager|superior)\b/, 'Boss Power Dynamic'],
     [/\b(workplace|office|team|colleague|coworker)\b.*\b(conflict|politics|tension|power|trust)\b|\b(conflict|politics|tension|power|trust)\b.*\b(workplace|office|team|colleague|coworker)\b/, 'Workplace Power Dynamic'],
@@ -551,7 +553,7 @@ export default function Chatbot() {
       setConversationContext(fallbackTitle);
       localStorage.setItem(CONVERSATION_TITLE_STORAGE_KEY, fallbackTitle);
 
-      generateHuggingFaceConversationTitle({
+      generateConversationTitleWithModel({
         situation: firstMeaningfulUser.text.trim(),
         fallbackTitle,
         model: currentModel,
