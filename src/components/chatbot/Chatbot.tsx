@@ -548,7 +548,7 @@ export default function Chatbot() {
     return () => window.clearInterval(intervalId);
   }, [isLoading, hasTypingMessage]);
 
-  const renderComposer = (placement: 'center' | 'footer') => (
+const renderComposer = (placement: 'center' | 'footer') => (
     <form
       onSubmit={handleSubmit}
       className={cn(
@@ -559,7 +559,7 @@ export default function Chatbot() {
       <Input
         ref={inputRef}
         type="text"
-        placeholder="Tell me what happened, who’s involved, and what you’re trying to figure out…"
+        placeholder={placement === 'center' ? "Tell me what happened, who’s involved, and what you’re trying to figure out…" : "Tell me more…"}
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         className="h-11 flex-grow rounded-full border-0 bg-transparent px-3 text-base text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
