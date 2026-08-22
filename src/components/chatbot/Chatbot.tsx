@@ -474,6 +474,14 @@ export default function Chatbot() {
     });
   };
 
+  const handleModelChange = (newModel: ChatbotModel) => {
+    setCurrentModel(newModel);
+    if (isClientInitialized) {
+      localStorage.setItem(MODEL_STORAGE_KEY, newModel);
+      window.dispatchEvent(new CustomEvent(MODEL_CHANGE_EVENT, { detail: newModel }));
+    }
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!inputValue.trim() || isLoading || !isClientInitialized || messages.some(msg => msg.isTyping)) return;
@@ -617,7 +625,7 @@ export default function Chatbot() {
     <form
       onSubmit={handleSubmit}
       className={cn(
-        "composer-focus-glow flex w-full items-end gap-2 rounded-[1.75rem] border p-1.5 backdrop-blur-md",
+        "composer-focus-glow flex w-full flex-col rounded-[1.75rem] border p-1.5 backdrop-blur-md",
         placement === 'center'
           ? "border-white/10 bg-black/30 shadow-2xl shadow-black/25"
           : "border-white/[0.08] bg-white/[0.07] shadow-xl shadow-black/20"
@@ -635,20 +643,40 @@ export default function Chatbot() {
           e.currentTarget.form?.requestSubmit();
         }}
         rows={1}
-        className="max-h-[180px] min-h-11 flex-grow resize-none rounded-[1.35rem] border-0 bg-transparent px-3 py-2.5 text-base leading-6 text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+        className="max-h-[180px] min-h-11 resize-none rounded-[1.35rem] border-0 bg-transparent px-3 py-2.5 text-base leading-6 text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
         disabled={isInputDisabled}
         aria-label="Chat input"
       />
-      <Button
-        type="submit"
-        size="icon"
-        className="h-10 w-10 shrink-0 rounded-full bg-primary text-primary-foreground shadow-md shadow-black/25 transition-transform hover:bg-primary/90 active:scale-95 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:h-11 sm:w-11"
-        disabled={isLoading || !inputValue.trim() || hasTypingMessage}
-        aria-label="Send message"
-      >
-        <Send size={isMobile ? 18 : 20} />
-        <span className="sr-only">Send</span>
-      </Button>
+      <div className="flex w-full items-center justify-between gap-2 px-1 pb-1">
+        <Select value={currentModel} onValueChange={(value: ChatbotModel) => handleModelChange(value)}>
+          <SelectTrigger
+            className="h-9 w-auto max-w-[13rem] rounded-full border border-white/10 bg-white/[0.06] px-3 text-xs text-muted-foreground shadow-none transition-colors hover:bg-white/[0.09] hover:text-foreground focus:ring-1 focus:ring-ring focus-visible:ring-1 focus-visible:ring-ring sm:max-w-[16rem] sm:text-sm [&_svg]:ml-2"
+            aria-label="Select model"
+          >
+            <SelectValue placeholder="Select model" />
+          </SelectTrigger>
+          <SelectContent align="start">
+            <SelectGroup>
+              <SelectLabel className="px-2 py-1 text-xs">Model</SelectLabel>
+              {CHATBOT_MODEL_OPTIONS.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <Button
+          type="submit"
+          size="icon"
+          className="h-10 w-10 shrink-0 rounded-full bg-primary text-primary-foreground shadow-md shadow-black/25 transition-transform hover:bg-primary/90 active:scale-95 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:h-11 sm:w-11"
+          disabled={isLoading || !inputValue.trim() || hasTypingMessage}
+          aria-label="Send message"
+        >
+          <Send size={isMobile ? 18 : 20} />
+          <span className="sr-only">Send</span>
+        </Button>
+      </div>
     </form>
   );
 
