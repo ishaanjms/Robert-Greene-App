@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, type FormEvent } from 'react';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MessageBubble from './MessageBubble';
@@ -296,7 +296,7 @@ export default function Chatbot() {
   const [openingPrompt, setOpeningPrompt] = useState(OPENING_PROMPTS[0]);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const titleRequestMessageIdRef = useRef<string | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -603,23 +603,39 @@ export default function Chatbot() {
     return () => window.clearInterval(intervalId);
   }, [isLoading, hasTypingMessage]);
 
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = 'auto';
+    const nextHeight = Math.min(textarea.scrollHeight, 180);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > 180 ? 'auto' : 'hidden';
+  }, [inputValue]);
+
   const renderComposer = (placement: 'center' | 'footer') => (
     <form
       onSubmit={handleSubmit}
       className={cn(
-        "composer-focus-glow flex w-full items-center gap-2 rounded-full border p-1.5 backdrop-blur-md",
+        "composer-focus-glow flex w-full items-end gap-2 rounded-[1.75rem] border p-1.5 backdrop-blur-md",
         placement === 'center'
           ? "border-white/10 bg-black/30 shadow-2xl shadow-black/25"
           : "border-white/[0.08] bg-white/[0.07] shadow-xl shadow-black/20"
       )}
     >
-      <Input
+      <Textarea
         ref={inputRef}
-        type="text"
         placeholder={placement === 'center' ? "What happened, who’s involved, or what feels unclear?" : "Tell me more…"}
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        className="h-11 flex-grow rounded-full border-0 bg-transparent px-3 text-base text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
+
+          e.preventDefault();
+          e.currentTarget.form?.requestSubmit();
+        }}
+        rows={1}
+        className="max-h-[180px] min-h-11 flex-grow resize-none rounded-[1.35rem] border-0 bg-transparent px-3 py-2.5 text-base leading-6 text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
         disabled={isInputDisabled}
         aria-label="Chat input"
       />
