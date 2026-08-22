@@ -1,7 +1,7 @@
 // src/ai/flows/law-library-guidance.ts
 
 /**
- * @fileOverview A RAG-style chat flow grounded in the local Laws of Human Nature markdown guide.
+ * @fileOverview A RAG-style chat flow grounded in the local Robert Greene markdown guides.
  */
 
 import fs from 'fs';
@@ -19,7 +19,7 @@ const MessageSchema = z.object({
 });
 
 const LawLibraryGuidanceInputSchema = z.object({
-  question: z.string().describe('The user question or situation to analyze through the law library.'),
+  question: z.string().describe('The user question or situation to analyze through the Greene Library.'),
   model: z.enum([
     'gemini-3.6-flash',
     'huggingface-openai-gpt-oss-120b',
@@ -32,19 +32,33 @@ const LawLibraryGuidanceInputSchema = z.object({
 export type LawLibraryGuidanceInput = z.infer<typeof LawLibraryGuidanceInputSchema>;
 
 const LawLibraryGuidanceOutputSchema = z.object({
-  answer: z.string().describe('A concise answer grounded in retrieved law-library notes.'),
-  sources: z.array(z.string()).describe('The law sections used as reference.'),
+  answer: z.string().describe('A concise answer grounded in retrieved Greene Library notes.'),
+  sources: z.array(z.string()).describe('The retrieved guide sections used as reference.'),
 });
 export type LawLibraryGuidanceOutput = z.infer<typeof LawLibraryGuidanceOutputSchema>;
 
 type LawSection = {
   id: string;
+  book: string;
   title: string;
   subtitle: string;
   content: string;
 };
 
-const MARKDOWN_FILE = path.join(process.cwd(), 'laws_of_human_nature_detailed_study_guide.md');
+const MARKDOWN_SOURCES = [
+  {
+    fileName: 'laws_of_human_nature_detailed_study_guide.md',
+    book: 'The Laws of Human Nature',
+    sectionPattern: /^# Law\s+(\d+)\s+—\s+(.+?)\n([\s\S]*?)(?=^# Law\s+\d+\s+—|^# Cross-Law Diagnostic Index|^# A Compact Analysis Template|^# Final Principle|(?![\s\S]))/gm,
+    titlePrefix: 'Law',
+  },
+  {
+    fileName: 'the_33_strategies_of_war_detailed_study_guide.md',
+    book: 'The 33 Strategies of War',
+    sectionPattern: /^## Strategy\s+(\d+)\s+—\s+(.+?)\n([\s\S]*?)(?=^## Strategy\s+\d+\s+—|^# Part\s+|^# Quick Diagnostic Index|^# Five Meta-Principles|^# Reusable Strategic Situation Template|^# Final Note|(?![\s\S]))/gm,
+    titlePrefix: 'Strategy',
+  },
+];
 
 const huggingFaceModelIds: Partial<Record<ChatbotModel, string>> = {
   'huggingface-openai-gpt-oss-120b': 'openai/gpt-oss-120b',
@@ -58,21 +72,27 @@ let cachedSections: LawSection[] | null = null;
 const readLawSections = () => {
   if (cachedSections) return cachedSections;
 
-  const markdown = fs.readFileSync(MARKDOWN_FILE, 'utf8');
-  const matches = Array.from(markdown.matchAll(/^# Law\s+(\d+)\s+—\s+(.+?)\n([\s\S]*?)(?=^# Law\s+\d+\s+—|\s*$)/gm));
+  cachedSections = MARKDOWN_SOURCES.flatMap(source => {
+    const filePath = path.join(process.cwd(), source.fileName);
+    if (!fs.existsSync(filePath)) return [];
 
-  cachedSections = matches.map(match => {
-    const lawNumber = match[1];
-    const title = `Law ${lawNumber} — ${match[2].trim()}`;
-    const body = match[3].trim();
-    const subtitle = body.match(/^\*\*(.+?)\*\*/m)?.[1]?.trim() ?? '';
+    const markdown = fs.readFileSync(filePath, 'utf8');
+    const matches = Array.from(markdown.matchAll(source.sectionPattern));
 
-    return {
-      id: `law-${lawNumber}`,
-      title,
-      subtitle,
-      content: body,
-    };
+    return matches.map(match => {
+      const sectionNumber = match[1];
+      const title = `${source.book}: ${source.titlePrefix} ${sectionNumber} — ${match[2].trim()}`;
+      const body = match[3].trim();
+      const subtitle = body.match(/^\*\*(.+?)\*\*/m)?.[1]?.trim() ?? '';
+
+      return {
+        id: `${source.titlePrefix.toLowerCase()}-${sectionNumber}`,
+        book: source.book,
+        title,
+        subtitle,
+        content: body,
+      };
+    });
   });
 
   return cachedSections;
@@ -116,8 +136,8 @@ const trimSection = (section: LawSection) => {
       return (
         trimmed &&
         !trimmed.startsWith('---') &&
-        !/^## Example User Situations/.test(trimmed) &&
-        !/^## Questions to Ask/.test(trimmed)
+        !/^#{2,3} Example User Situations/.test(trimmed) &&
+        !/^#{2,3} Questions to Ask/.test(trimmed)
       );
     })
     .join('\n');
@@ -152,20 +172,20 @@ const formatHistory = (history?: LawLibraryGuidanceInput['conversationHistory'])
   history?.length
     ? history
         .slice(-8)
-        .map(message => `${message.sender === 'user' ? 'User' : 'Law Library'}: ${message.text}`)
+        .map(message => `${message.sender === 'user' ? 'User' : 'Greene Library'}: ${message.text}`)
         .join('\n')
-    : 'This is the beginning of the law-library conversation.';
+    : 'This is the beginning of the Greene Library conversation.';
 
 const sanitizeAnswer = (answer: string, sources: string[]) => {
   const trimmed = answer.trim();
   if (!trimmed) {
-    return `I found the strongest reference in ${sources[0] ?? 'the law library'}, but the model returned an empty answer. Try asking again with one concrete scene.`;
+    return `I found the strongest reference in ${sources[0] ?? 'the Greene Library'}, but the model returned an empty answer. Try asking again with one concrete scene.`;
   }
 
   return trimmed;
 };
 
-const buildSystemPrompt = (input: LawLibraryGuidanceInput, lawContext: string) => `You are the Law Library mode of Greene's Counsel.
+const buildSystemPrompt = (input: LawLibraryGuidanceInput, lawContext: string) => `You are the Greene Library mode of Greene's Counsel.
 
 You answer as a grounded RAG assistant. Use the supplied markdown study notes as your primary reference.
 
@@ -292,10 +312,10 @@ const LawLibraryPromptInputSchema = LawLibraryGuidanceInputSchema.extend({
 });
 
 const lawLibraryPrompt = ai.definePrompt({
-  name: 'lawLibraryPrompt',
+  name: 'greeneLibraryPrompt',
   input: {schema: LawLibraryPromptInputSchema},
   output: {schema: LawLibraryGuidanceOutputSchema},
-  prompt: `You are the Law Library mode of Greene's Counsel.
+  prompt: `You are the Greene Library mode of Greene's Counsel.
 
 You answer as a grounded RAG assistant. Use the supplied markdown study notes as your primary reference.
 

@@ -33,14 +33,16 @@ type LawLibraryResponse = {
   sources: string[];
 };
 
-export const LAW_LIBRARY_HISTORY_STORAGE_KEY = 'greeneCounselLawLibraryHistory';
+export const GREENE_LIBRARY_HISTORY_STORAGE_KEY = 'greeneCounselGreeneLibraryHistory';
+export const LAW_LIBRARY_HISTORY_STORAGE_KEY = GREENE_LIBRARY_HISTORY_STORAGE_KEY;
 
-const LAW_OPENING_PROMPTS = [
-  'Ask the laws',
+const GREENE_LIBRARY_OPENING_PROMPTS = [
+  'Ask the library',
   'Search the pattern',
   'Read the behavior',
-  'Find the human law at work',
-  'Ground this in the library',
+  'Find the strategy at work',
+  'Ground this in Greene',
+  'Trace the hidden dynamic',
 ];
 
 const createMessageId = () => {
@@ -54,7 +56,7 @@ const createMessageId = () => {
 const isChatbotModel = (value: unknown): value is ChatbotModel =>
   CHATBOT_MODEL_OPTIONS.some(option => option.value === value);
 
-const getRandomPrompt = () => LAW_OPENING_PROMPTS[Math.floor(Math.random() * LAW_OPENING_PROMPTS.length)];
+const getRandomPrompt = () => GREENE_LIBRARY_OPENING_PROMPTS[Math.floor(Math.random() * GREENE_LIBRARY_OPENING_PROMPTS.length)];
 
 export default function LawLibraryChatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -62,7 +64,7 @@ export default function LawLibraryChatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentModel, setCurrentModel] = useState<ChatbotModel>(DEFAULT_CHATBOT_MODEL);
   const [isClientInitialized, setIsClientInitialized] = useState(false);
-  const [openingPrompt, setOpeningPrompt] = useState(LAW_OPENING_PROMPTS[0]);
+  const [openingPrompt, setOpeningPrompt] = useState(GREENE_LIBRARY_OPENING_PROMPTS[0]);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -73,7 +75,9 @@ export default function LawLibraryChatbot() {
     const storedModel = localStorage.getItem(MODEL_STORAGE_KEY);
     setCurrentModel(isChatbotModel(storedModel) ? storedModel : DEFAULT_CHATBOT_MODEL);
 
-    const storedHistory = localStorage.getItem(LAW_LIBRARY_HISTORY_STORAGE_KEY);
+    const storedHistory =
+      localStorage.getItem(GREENE_LIBRARY_HISTORY_STORAGE_KEY) ||
+      localStorage.getItem('greeneCounselLawLibraryHistory');
     if (storedHistory) {
       try {
         const parsedHistory = JSON.parse(storedHistory);
@@ -82,7 +86,8 @@ export default function LawLibraryChatbot() {
         }
       } catch (error) {
         console.error('Failed to parse law library history from localStorage', error);
-        localStorage.removeItem(LAW_LIBRARY_HISTORY_STORAGE_KEY);
+        localStorage.removeItem(GREENE_LIBRARY_HISTORY_STORAGE_KEY);
+        localStorage.removeItem('greeneCounselLawLibraryHistory');
       }
     }
 
@@ -94,7 +99,7 @@ export default function LawLibraryChatbot() {
   useEffect(() => {
     if (!isClientInitialized || messages.length === 0) return;
     const savableMessages = messages.map(({fullText, isTyping, ...message}) => message);
-    localStorage.setItem(LAW_LIBRARY_HISTORY_STORAGE_KEY, JSON.stringify(savableMessages));
+    localStorage.setItem(GREENE_LIBRARY_HISTORY_STORAGE_KEY, JSON.stringify(savableMessages));
   }, [messages, isClientInitialized]);
 
   useEffect(() => {
@@ -189,7 +194,7 @@ export default function LawLibraryChatbot() {
           isBot: message.sender === 'bot',
         }));
 
-      const apiResponse = await fetch('/api/law-library', {
+      const apiResponse = await fetch('/api/greene-library', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -201,7 +206,7 @@ export default function LawLibraryChatbot() {
 
       const response = (await apiResponse.json()) as LawLibraryResponse;
       if (!apiResponse.ok) {
-        throw new Error(response.answer || 'Law Library API request failed.');
+        throw new Error(response.answer || 'Greene Library API request failed.');
       }
 
       const sourceLine = response.sources.length
@@ -219,8 +224,8 @@ export default function LawLibraryChatbot() {
         },
       ]);
     } catch (error) {
-      console.error('Error getting law-library guidance:', error);
-      const message = error instanceof Error ? error.message : 'I could not reach the law library right now. Try again in a moment.';
+      console.error('Error getting Greene Library guidance:', error);
+      const message = error instanceof Error ? error.message : 'I could not reach the Greene Library right now. Try again in a moment.';
       setMessages(previous => [
         ...previous,
         {
@@ -233,7 +238,7 @@ export default function LawLibraryChatbot() {
       ]);
       toast({
         title: 'Library Error',
-        description: 'The law-library response failed. Please try again.',
+        description: 'The Greene Library response failed. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -257,7 +262,7 @@ export default function LawLibraryChatbot() {
     >
       <Textarea
         ref={inputRef}
-        placeholder={placement === 'center' ? 'Ask a situation, pattern, or law to retrieve from the notes…' : 'Ask the library…'}
+        placeholder={placement === 'center' ? 'Ask a situation, pattern, law, or strategy to retrieve from the notes…' : 'Ask the library…'}
         value={inputValue}
         onChange={event => setInputValue(event.target.value)}
         onKeyDown={event => {
@@ -268,7 +273,7 @@ export default function LawLibraryChatbot() {
         rows={1}
         className="max-h-[180px] min-h-11 resize-none rounded-[1.35rem] border-0 bg-transparent px-3 py-2.5 text-base leading-6 text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
         disabled={isLoading || hasTypingMessage}
-        aria-label="Law library input"
+        aria-label="Greene Library input"
       />
       <div className="flex w-full items-center justify-between gap-2 px-1 pb-1">
         <Select value={currentModel} onValueChange={(value: ChatbotModel) => handleModelChange(value)}>
@@ -294,7 +299,7 @@ export default function LawLibraryChatbot() {
           size="icon"
           className="h-10 w-10 shrink-0 rounded-full bg-primary text-primary-foreground shadow-md shadow-black/25 transition-transform hover:bg-primary/90 active:scale-95 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none sm:h-11 sm:w-11"
           disabled={isLoading || !inputValue.trim() || hasTypingMessage}
-          aria-label="Ask law library"
+          aria-label="Ask Greene Library"
         >
           <Send size={isMobile ? 18 : 20} />
           <span className="sr-only">Send</span>
@@ -309,7 +314,7 @@ export default function LawLibraryChatbot() {
         <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/10 text-primary shadow-2xl shadow-black/30">
           <BookOpen className="animate-pulse" size={28} />
         </div>
-        <p className="mt-4 text-sm text-muted-foreground">Opening the law library...</p>
+        <p className="mt-4 text-sm text-muted-foreground">Opening the Greene Library...</p>
       </div>
     );
   }
@@ -327,11 +332,11 @@ export default function LawLibraryChatbot() {
             </SidebarTrigger>
           )}
           <h1 className="truncate font-serif text-lg font-bold text-foreground">
-            Law Library
+            Greene Library
           </h1>
         </div>
         <div className="hidden text-sm text-muted-foreground sm:block">
-          Grounded in your markdown notes
+          Grounded in your Greene markdown notes
         </div>
       </header>
 
@@ -343,7 +348,7 @@ export default function LawLibraryChatbot() {
                 {openingPrompt}
               </h2>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                This chat retrieves from your Laws of Human Nature study guide before answering.
+                This chat retrieves from your Laws of Human Nature and 33 Strategies of War notes before answering.
               </p>
             </div>
             {renderComposer('center')}
@@ -361,7 +366,7 @@ export default function LawLibraryChatbot() {
                   <div className="max-w-xl rounded-3xl border border-white/10 bg-white/[0.07] px-5 py-4 text-center shadow-lg shadow-black/10 backdrop-blur-sm">
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                       <BookOpen className="animate-pulse" size={16} />
-                      <span>Searching the law library...</span>
+                      <span>Searching the Greene Library...</span>
                     </div>
                   </div>
                 </div>

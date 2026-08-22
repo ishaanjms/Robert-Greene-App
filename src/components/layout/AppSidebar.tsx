@@ -28,18 +28,19 @@ import {
   CONVERSATION_HISTORY_STORAGE_KEY,
   CONVERSATION_TITLE_STORAGE_KEY,
 } from '@/components/chatbot/Chatbot';
-import { LAW_LIBRARY_HISTORY_STORAGE_KEY } from '@/components/chatbot/LawLibraryChatbot';
+import { GREENE_LIBRARY_HISTORY_STORAGE_KEY } from '@/components/chatbot/LawLibraryChatbot';
 
 
 export default function AppSidebar() {
   const { open, toggleSidebar } = useSidebar();
   const pathname = usePathname();
-  const isLawLibrary = pathname === '/laws';
+  const isGreeneLibrary = pathname === '/library' || pathname === '/laws';
 
   const handleNewChat = () => {
     if (typeof window !== 'undefined') {
-      if (isLawLibrary) {
-        localStorage.removeItem(LAW_LIBRARY_HISTORY_STORAGE_KEY);
+      if (isGreeneLibrary) {
+        localStorage.removeItem(GREENE_LIBRARY_HISTORY_STORAGE_KEY);
+        localStorage.removeItem('greeneCounselLawLibraryHistory');
       } else {
         localStorage.removeItem(CONVERSATION_HISTORY_STORAGE_KEY);
         localStorage.removeItem(CONVERSATION_TITLE_STORAGE_KEY);
@@ -85,32 +86,32 @@ export default function AppSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                tooltip={{ children: "Law Library", side: "right", align:"center", className:"bg-card text-card-foreground border-border" }}
+                tooltip={{ children: "Greene Library", side: "right", align:"center", className:"bg-card text-card-foreground border-border" }}
                 className={cn(
                   "h-10 justify-start rounded-full text-sidebar-foreground transition-colors hover:bg-white/10 hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring",
-                  isLawLibrary && "bg-white/10 text-sidebar-accent-foreground",
+                  isGreeneLibrary && "bg-white/10 text-sidebar-accent-foreground",
                   !open && "justify-center"
                 )}
-                aria-label="Open Law Library"
+                aria-label="Open Greene Library"
               >
-                <Link href="/laws">
+                <Link href="/library">
                   <BookOpen size={20} />
-                  {open && <span className="ml-2">Law Library</span>}
+                  {open && <span className="ml-2">Greene Library</span>}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
                 onClick={handleNewChat}
-                tooltip={{ children: isLawLibrary ? "Reset Law Library" : "Start a New Chat", side: "right", align:"center", className:"bg-card text-card-foreground border-border" }}
+                tooltip={{ children: isGreeneLibrary ? "Reset Greene Library" : "Start a New Chat", side: "right", align:"center", className:"bg-card text-card-foreground border-border" }}
                 className={cn(
                   "h-10 justify-start rounded-full text-sidebar-foreground transition-colors hover:bg-white/10 hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring",
                    !open && "justify-center"
                 )}
-                aria-label={isLawLibrary ? "Reset Law Library" : "Start a New Chat"}
+                aria-label={isGreeneLibrary ? "Reset Greene Library" : "Start a New Chat"}
               >
                 <PlusCircle size={20} />
-                {open && <span className="ml-2">{isLawLibrary ? "Reset Library" : "New Chat"}</span>}
+                {open && <span className="ml-2">{isGreeneLibrary ? "Reset Library" : "New Chat"}</span>}
               </SidebarMenuButton>
             </SidebarMenuItem>
             {open && (
@@ -118,10 +119,10 @@ export default function AppSidebar() {
                 <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs leading-relaxed text-sidebar-foreground/65 shadow-sm">
                   <div className="mb-1 flex items-center gap-1.5 font-medium text-sidebar-foreground/85">
                     <Sparkles size={13} className="text-primary" />
-                    {isLawLibrary ? "Library mode" : "Counsel mode"}
+                    {isGreeneLibrary ? "Library mode" : "Counsel mode"}
                   </div>
-                  {isLawLibrary
-                    ? "Ask against the markdown notes and get grounded law references."
+                  {isGreeneLibrary
+                    ? "Ask against the markdown notes and get grounded Greene references."
                     : "Ask for strategy, power dynamics, persuasion, or conflict analysis."}
                 </div>
               </SidebarMenuItem>
