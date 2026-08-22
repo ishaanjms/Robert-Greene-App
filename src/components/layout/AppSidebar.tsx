@@ -2,6 +2,8 @@
 // src/components/layout/AppSidebar.tsx
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -13,9 +15,11 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
+  BookOpen,
   Bot,
   ChevronsLeft,
   ChevronsRight,
+  MessageCircle,
   PlusCircle,
   Sparkles,
 } from "lucide-react";
@@ -24,18 +28,23 @@ import {
   CONVERSATION_HISTORY_STORAGE_KEY,
   CONVERSATION_TITLE_STORAGE_KEY,
 } from '@/components/chatbot/Chatbot';
+import { LAW_LIBRARY_HISTORY_STORAGE_KEY } from '@/components/chatbot/LawLibraryChatbot';
 
 
 export default function AppSidebar() {
   const { open, toggleSidebar } = useSidebar();
+  const pathname = usePathname();
+  const isLawLibrary = pathname === '/laws';
 
   const handleNewChat = () => {
-    // Clear conversation history from localStorage
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(CONVERSATION_HISTORY_STORAGE_KEY);
-      localStorage.removeItem(CONVERSATION_TITLE_STORAGE_KEY);
+      if (isLawLibrary) {
+        localStorage.removeItem(LAW_LIBRARY_HISTORY_STORAGE_KEY);
+      } else {
+        localStorage.removeItem(CONVERSATION_HISTORY_STORAGE_KEY);
+        localStorage.removeItem(CONVERSATION_TITLE_STORAGE_KEY);
+      }
     }
-    // Reload the page to re-initialize the Chatbot component
     window.location.reload();
   };
 
@@ -58,16 +67,50 @@ export default function AppSidebar() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
+                asChild
+                tooltip={{ children: "Counsel Chat", side: "right", align:"center", className:"bg-card text-card-foreground border-border" }}
+                className={cn(
+                  "h-10 justify-start rounded-full text-sidebar-foreground transition-colors hover:bg-white/10 hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring",
+                  pathname === '/' && "bg-white/10 text-sidebar-accent-foreground",
+                  !open && "justify-center"
+                )}
+                aria-label="Open Counsel Chat"
+              >
+                <Link href="/">
+                  <MessageCircle size={20} />
+                  {open && <span className="ml-2">Counsel Chat</span>}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                tooltip={{ children: "Law Library", side: "right", align:"center", className:"bg-card text-card-foreground border-border" }}
+                className={cn(
+                  "h-10 justify-start rounded-full text-sidebar-foreground transition-colors hover:bg-white/10 hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring",
+                  isLawLibrary && "bg-white/10 text-sidebar-accent-foreground",
+                  !open && "justify-center"
+                )}
+                aria-label="Open Law Library"
+              >
+                <Link href="/laws">
+                  <BookOpen size={20} />
+                  {open && <span className="ml-2">Law Library</span>}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
                 onClick={handleNewChat}
-                tooltip={{ children: "Start a New Chat", side: "right", align:"center", className:"bg-card text-card-foreground border-border" }}
+                tooltip={{ children: isLawLibrary ? "Reset Law Library" : "Start a New Chat", side: "right", align:"center", className:"bg-card text-card-foreground border-border" }}
                 className={cn(
                   "h-10 justify-start rounded-full text-sidebar-foreground transition-colors hover:bg-white/10 hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring",
                    !open && "justify-center"
                 )}
-                aria-label="Start a New Chat"
+                aria-label={isLawLibrary ? "Reset Law Library" : "Start a New Chat"}
               >
                 <PlusCircle size={20} />
-                {open && <span className="ml-2">New Chat</span>}
+                {open && <span className="ml-2">{isLawLibrary ? "Reset Library" : "New Chat"}</span>}
               </SidebarMenuButton>
             </SidebarMenuItem>
             {open && (
@@ -75,9 +118,11 @@ export default function AppSidebar() {
                 <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs leading-relaxed text-sidebar-foreground/65 shadow-sm">
                   <div className="mb-1 flex items-center gap-1.5 font-medium text-sidebar-foreground/85">
                     <Sparkles size={13} className="text-primary" />
-                    Counsel mode
+                    {isLawLibrary ? "Library mode" : "Counsel mode"}
                   </div>
-                  Ask for strategy, power dynamics, persuasion, or conflict analysis.
+                  {isLawLibrary
+                    ? "Ask against the markdown notes and get grounded law references."
+                    : "Ask for strategy, power dynamics, persuasion, or conflict analysis."}
                 </div>
               </SidebarMenuItem>
             )}
