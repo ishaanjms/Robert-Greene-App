@@ -121,6 +121,24 @@ const MARKDOWN_SOURCES = [
     getTitle: (match: RegExpMatchArray) => `Chapter ${match[1]} — ${match[2].trim()}`,
     getBody: (match: RegExpMatchArray) => match[3],
   },
+  {
+    fileName: 'mastery_robert_greene_detailed_study_guide.md',
+    book: 'Mastery',
+    sectionPattern: /^# (\d+)\.\s+(.+?)\n([\s\S]*?)(?=^# \d+\.\s+|^# Emotional Pitfalls|^# Strategies for the Creative-Active Phase|^# THE FULL MASTERY PATH|^# QUICK DIAGNOSTIC INDEX|^# COMMON FAILURE MODES|^# REUSABLE MASTERY SITUATION TEMPLATE|^# AI \/ ADVISOR ROUTING GUIDE|^# FINAL SYNTHESIS|(?![\s\S]))/gm,
+    idPrefix: 'mastery-phase',
+    detailHeadingLevel: 2,
+    getTitle: (match: RegExpMatchArray) => `Phase ${match[1]} — ${match[2].trim()}`,
+    getBody: (match: RegExpMatchArray) => match[3],
+  },
+  {
+    fileName: 'mastery_robert_greene_detailed_study_guide.md',
+    book: 'Mastery',
+    sectionPattern: /^## Strategy\s+(\d+)\s+—\s+(.+?)\s*\n([\s\S]*?)(?=^## Strategy\s+\d+\s+—|^# \d+\.\s+|^# Emotional Pitfalls|^# Strategies for the Creative-Active Phase|^# THE FULL MASTERY PATH|^# QUICK DIAGNOSTIC INDEX|^# COMMON FAILURE MODES|^# REUSABLE MASTERY SITUATION TEMPLATE|^# AI \/ ADVISOR ROUTING GUIDE|^# FINAL SYNTHESIS|(?![\s\S]))/gm,
+    idPrefix: 'mastery-strategy',
+    detailHeadingLevel: 3,
+    getTitle: (match: RegExpMatchArray) => `Strategy ${match[1]} — ${match[2].trim()}`,
+    getBody: (match: RegExpMatchArray) => match[3],
+  },
 ];
 
 const huggingFaceModelIds: Partial<Record<ChatbotModel, string>> = {
@@ -144,20 +162,58 @@ const extractSectionField = (body: string, headingLevel: number, heading: string
   return body.match(pattern)?.[1]?.trim() ?? '';
 };
 
+const extractSectionFieldAnyLevel = (body: string, preferredHeadingLevel: number, heading: string) => {
+  const levels = Array.from(new Set([preferredHeadingLevel, 2, 3, 4]));
+
+  for (const level of levels) {
+    const field = extractSectionField(body, level, heading);
+    if (field) return field;
+  }
+
+  return '';
+};
+
 const buildFields = (body: string, headingLevel: number) => ({
-  coreIdea: extractSectionField(body, headingLevel, 'Core Idea') || extractSectionField(body, headingLevel, 'Core Pattern'),
-  whenItApplies: extractSectionField(body, headingLevel, 'When It Applies') || extractSectionField(body, headingLevel, 'When It Applies / Signals'),
-  signals: extractSectionField(body, headingLevel, 'Signals') || extractSectionField(body, headingLevel, 'Signals / Problem Pattern') || extractSectionField(body, headingLevel, 'When It Applies / Signals'),
+  coreIdea: extractSectionFieldAnyLevel(body, headingLevel, 'Core Idea') || extractSectionFieldAnyLevel(body, headingLevel, 'Core Pattern'),
+  whenItApplies:
+    extractSectionFieldAnyLevel(body, headingLevel, 'When It Applies') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'When It Applies / Signals') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals You May Be Close to Your Life\'s Task') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals You May Be on a False Path') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals You Need This') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals You Are Doing It Well') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals of Developing Mastery'),
+  signals:
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals / Problem Pattern') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'When It Applies / Signals') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals You May Be Close to Your Life\'s Task') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals You May Be on a False Path') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals You Need This') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals You Are Ready') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals of a Good Mentor') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals of a Poor Mentor') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signals of Developing Mastery') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signal') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Signal of Progress'),
   strategicAdvice:
-    extractSectionField(body, headingLevel, 'Strategic Advice') ||
-    extractSectionField(body, headingLevel, 'Practical / Ethical Application') ||
-    extractSectionField(body, headingLevel, 'Defensive / Ethical Reading'),
+    extractSectionFieldAnyLevel(body, headingLevel, 'Strategic Advice') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Advice') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Applications') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Practical / Ethical Application') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Defensive / Ethical Reading') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Counter'),
   risks:
-    extractSectionField(body, headingLevel, 'Risks / Misreadings') ||
-    extractSectionField(body, headingLevel, 'Risks / Reversal') ||
-    extractSectionField(body, headingLevel, 'Risks / Defensive Reading') ||
-    extractSectionField(body, headingLevel, 'Defensive / Ethical Reading'),
-  examples: extractSectionField(body, headingLevel, 'Example User Situations'),
+    extractSectionFieldAnyLevel(body, headingLevel, 'Risks / Misreadings') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Risks / Reversal') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Risks / Defensive Reading') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Risks') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Risk') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Defensive / Ethical Reading'),
+  examples:
+    extractSectionFieldAnyLevel(body, headingLevel, 'Example User Situations') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Example Situations') ||
+    extractSectionFieldAnyLevel(body, headingLevel, 'Example'),
 });
 
 const readLawSections = () => {
@@ -310,6 +366,50 @@ const analyzeSituation = (question: string): SituationUnderstanding => {
 
   if (matchAny(normalized, [/\b(manager|boss|coworker|colleague|team|office|work)\b/])) {
     inferredConcepts.push('workplace dynamic', 'status pressure', 'power relation', 'character pattern');
+  }
+
+  if (matchAny(normalized, [/\b(career|calling|purpose|life task|life's task|passion|direction|path|stuck|lost|meaning|profession)\b/])) {
+    inferredConcepts.push(
+      'life task',
+      'calling',
+      'false path',
+      'deep inclination',
+      'career direction',
+      'long term mastery'
+    );
+  }
+
+  if (matchAny(normalized, [/\b(skill|practice|learn|learning|apprentice|apprenticeship|beginner|training|failure|process|improve|mastery)\b/])) {
+    inferredConcepts.push(
+      'ideal apprenticeship',
+      'skill acquisition',
+      'value learning over money',
+      'trust the process',
+      'practice mode',
+      'trial and error',
+      'move toward resistance and pain'
+    );
+  }
+
+  if (matchAny(normalized, [/\b(mentor|teacher|guide|coach|feedback|criticism|senior|expert)\b/])) {
+    inferredConcepts.push(
+      'mentor dynamic',
+      'choose mentor according to needs',
+      'mentor mirror',
+      'feedback',
+      'social intelligence'
+    );
+  }
+
+  if (matchAny(normalized, [/\b(creative|creativity|create|artist|writer|project|idea|innovation|breakthrough|original|stuck creatively)\b/])) {
+    inferredConcepts.push(
+      'creative active phase',
+      'dimensional mind',
+      'negative capability',
+      'serendipity',
+      'creative breakthrough',
+      'authentic voice'
+    );
   }
 
   if (matchAny(normalized, [/\b(enemy|opponent|rival|conflict|fight|attack|defend|negotiate)\b/])) {
