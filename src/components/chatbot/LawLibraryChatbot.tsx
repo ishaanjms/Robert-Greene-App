@@ -348,7 +348,7 @@ export default function LawLibraryChatbot() {
                 {openingPrompt}
               </h2>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                This chat retrieves from your Laws of Human Nature and 33 Strategies of War notes before answering.
+                This chat retrieves from your Human Nature, War, and Seduction notes before answering.
               </p>
             </div>
             {renderComposer('center')}

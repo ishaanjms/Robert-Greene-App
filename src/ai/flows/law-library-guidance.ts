@@ -74,15 +74,52 @@ const MARKDOWN_SOURCES = [
     fileName: 'laws_of_human_nature_detailed_study_guide.md',
     book: 'The Laws of Human Nature',
     sectionPattern: /^# Law\s+(\d+)\s+—\s+(.+?)\n([\s\S]*?)(?=^# Law\s+\d+\s+—|^# Cross-Law Diagnostic Index|^# A Compact Analysis Template|^# Final Principle|(?![\s\S]))/gm,
-    titlePrefix: 'Law',
+    idPrefix: 'law',
     detailHeadingLevel: 2,
+    getTitle: (match: RegExpMatchArray) => `Law ${match[1]} — ${match[2].trim()}`,
+    getBody: (match: RegExpMatchArray) => match[3],
   },
   {
     fileName: 'the_33_strategies_of_war_detailed_study_guide.md',
     book: 'The 33 Strategies of War',
     sectionPattern: /^## Strategy\s+(\d+)\s+—\s+(.+?)\n([\s\S]*?)(?=^## Strategy\s+\d+\s+—|^# Part\s+|^# Quick Diagnostic Index|^# Five Meta-Principles|^# Reusable Strategic Situation Template|^# Final Note|(?![\s\S]))/gm,
-    titlePrefix: 'Strategy',
+    idPrefix: 'strategy',
     detailHeadingLevel: 3,
+    getTitle: (match: RegExpMatchArray) => `Strategy ${match[1]} — ${match[2].trim()}`,
+    getBody: (match: RegExpMatchArray) => match[3],
+  },
+  {
+    fileName: 'the_art_of_seduction_detailed_study_guide.md',
+    book: 'The Art of Seduction',
+    sectionPattern: /^## (The (?:Siren|Rake|Ideal Lover|Dandy|Natural|Coquette|Charmer|Charismatic|Star|Anti-Seducer))\n([\s\S]*?)(?=^## The (?:Siren|Rake|Ideal Lover|Dandy|Natural|Coquette|Charmer|Charismatic|Star|Anti-Seducer)|^# THE 18 VICTIM TYPES|(?![\s\S]))/gm,
+    regionStart: '# PART I',
+    regionEnd: '# THE 18 VICTIM TYPES',
+    idPrefix: 'seductive-character',
+    detailHeadingLevel: 3,
+    getTitle: (match: RegExpMatchArray) => `Seductive Character — ${match[1].trim()}`,
+    getBody: (match: RegExpMatchArray) => match[2],
+  },
+  {
+    fileName: 'the_art_of_seduction_detailed_study_guide.md',
+    book: 'The Art of Seduction',
+    sectionPattern: /^## (\d+)\.\s+(.+?)\n([\s\S]*?)(?=^## \d+\.\s+|^# PART II|(?![\s\S]))/gm,
+    regionStart: '# THE 18 VICTIM TYPES',
+    regionEnd: '# PART II',
+    idPrefix: 'victim-type',
+    detailHeadingLevel: 3,
+    getTitle: (match: RegExpMatchArray) => `Victim Type ${match[1]} — ${match[2].trim()}`,
+    getBody: (match: RegExpMatchArray) => match[3],
+  },
+  {
+    fileName: 'the_art_of_seduction_detailed_study_guide.md',
+    book: 'The Art of Seduction',
+    sectionPattern: /^## Chapter\s+(\d+)\s+—\s+(.+?)\n([\s\S]*?)(?=^## Chapter\s+\d+\s+—|^# QUICK ROUTING INDEX|(?![\s\S]))/gm,
+    regionStart: '# PART II',
+    regionEnd: '# QUICK ROUTING INDEX',
+    idPrefix: 'seduction-chapter',
+    detailHeadingLevel: 3,
+    getTitle: (match: RegExpMatchArray) => `Chapter ${match[1]} — ${match[2].trim()}`,
+    getBody: (match: RegExpMatchArray) => match[3],
   },
 ];
 
@@ -108,11 +145,18 @@ const extractSectionField = (body: string, headingLevel: number, heading: string
 };
 
 const buildFields = (body: string, headingLevel: number) => ({
-  coreIdea: extractSectionField(body, headingLevel, 'Core Idea'),
-  whenItApplies: extractSectionField(body, headingLevel, 'When It Applies'),
-  signals: extractSectionField(body, headingLevel, 'Signals') || extractSectionField(body, headingLevel, 'Signals / Problem Pattern'),
-  strategicAdvice: extractSectionField(body, headingLevel, 'Strategic Advice'),
-  risks: extractSectionField(body, headingLevel, 'Risks / Misreadings') || extractSectionField(body, headingLevel, 'Risks / Reversal'),
+  coreIdea: extractSectionField(body, headingLevel, 'Core Idea') || extractSectionField(body, headingLevel, 'Core Pattern'),
+  whenItApplies: extractSectionField(body, headingLevel, 'When It Applies') || extractSectionField(body, headingLevel, 'When It Applies / Signals'),
+  signals: extractSectionField(body, headingLevel, 'Signals') || extractSectionField(body, headingLevel, 'Signals / Problem Pattern') || extractSectionField(body, headingLevel, 'When It Applies / Signals'),
+  strategicAdvice:
+    extractSectionField(body, headingLevel, 'Strategic Advice') ||
+    extractSectionField(body, headingLevel, 'Practical / Ethical Application') ||
+    extractSectionField(body, headingLevel, 'Defensive / Ethical Reading'),
+  risks:
+    extractSectionField(body, headingLevel, 'Risks / Misreadings') ||
+    extractSectionField(body, headingLevel, 'Risks / Reversal') ||
+    extractSectionField(body, headingLevel, 'Risks / Defensive Reading') ||
+    extractSectionField(body, headingLevel, 'Defensive / Ethical Reading'),
   examples: extractSectionField(body, headingLevel, 'Example User Situations'),
 });
 
@@ -124,16 +168,21 @@ const readLawSections = () => {
     if (!fs.existsSync(filePath)) return [];
 
     const markdown = fs.readFileSync(filePath, 'utf8');
-    const matches = Array.from(markdown.matchAll(source.sectionPattern));
+    const regionStart = 'regionStart' in source && source.regionStart ? markdown.indexOf(source.regionStart) : -1;
+    const regionEnd = 'regionEnd' in source && source.regionEnd ? markdown.indexOf(source.regionEnd) : -1;
+    const searchableMarkdown =
+      regionStart >= 0
+        ? markdown.slice(regionStart, regionEnd > regionStart ? regionEnd : undefined)
+        : markdown;
+    const matches = Array.from(searchableMarkdown.matchAll(source.sectionPattern));
 
-    return matches.map(match => {
-      const sectionNumber = match[1];
-      const title = `${source.book}: ${source.titlePrefix} ${sectionNumber} — ${match[2].trim()}`;
-      const body = match[3].trim();
+    return matches.map((match, index) => {
+      const title = `${source.book}: ${source.getTitle(match)}`;
+      const body = source.getBody(match).trim();
       const subtitle = body.match(/^\*\*(.+?)\*\*/m)?.[1]?.trim() ?? '';
 
       return {
-        id: `${source.titlePrefix.toLowerCase()}-${sectionNumber}`,
+        id: `${source.idPrefix}-${index + 1}`,
         book: source.book,
         title,
         subtitle,
@@ -241,7 +290,21 @@ const analyzeSituation = (question: string): SituationUnderstanding => {
       'unavailable person',
       'absence intensifies desire',
       'relationship ambiguity',
-      'attachment to fantasy'
+      'attachment to fantasy',
+      'desire and distance',
+      'pursuer pursued',
+      'neediness risk',
+      'anti seducer'
+    );
+  }
+
+  if (matchAny(normalized, [/\b(attract|attraction|seduce|seduction|flirt|dating|romantic|desire|charm|charisma|impress)\b/])) {
+    inferredConcepts.push(
+      'attraction dynamic',
+      'seductive character',
+      'attention and mystery',
+      'ethical seduction',
+      'avoid pressure'
     );
   }
 
