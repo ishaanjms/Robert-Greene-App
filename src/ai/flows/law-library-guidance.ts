@@ -1,5 +1,4 @@
 // src/ai/flows/law-library-guidance.ts
-'use server';
 
 /**
  * @fileOverview A RAG-style chat flow grounded in the local Laws of Human Nature markdown guide.

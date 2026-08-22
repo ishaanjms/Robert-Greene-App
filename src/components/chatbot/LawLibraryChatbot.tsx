@@ -2,7 +2,6 @@
 
 import {useEffect, useRef, useState, type FormEvent} from 'react';
 import {BookOpen, Menu, Send} from 'lucide-react';
-import {getLawLibraryGuidance} from '@/ai/flows/law-library-guidance';
 import MessageBubble from './MessageBubble';
 import {
   CHATBOT_MODEL_OPTIONS,
@@ -28,6 +27,11 @@ import {Textarea} from '@/components/ui/textarea';
 import {useIsMobile} from '@/hooks/use-mobile';
 import {useToast} from '@/hooks/use-toast';
 import {cn} from '@/lib/utils';
+
+type LawLibraryResponse = {
+  answer: string;
+  sources: string[];
+};
 
 export const LAW_LIBRARY_HISTORY_STORAGE_KEY = 'greeneCounselLawLibraryHistory';
 
@@ -185,11 +189,20 @@ export default function LawLibraryChatbot() {
           isBot: message.sender === 'bot',
         }));
 
-      const response = await getLawLibraryGuidance({
-        question: userMessage.text,
-        model: currentModel,
-        conversationHistory,
+      const apiResponse = await fetch('/api/law-library', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          question: userMessage.text,
+          model: currentModel,
+          conversationHistory,
+        }),
       });
+
+      const response = (await apiResponse.json()) as LawLibraryResponse;
+      if (!apiResponse.ok) {
+        throw new Error(response.answer || 'Law Library API request failed.');
+      }
 
       const sourceLine = response.sources.length
         ? `\n\n---\n\nSources: ${response.sources.join('; ')}`
@@ -207,13 +220,14 @@ export default function LawLibraryChatbot() {
       ]);
     } catch (error) {
       console.error('Error getting law-library guidance:', error);
+      const message = error instanceof Error ? error.message : 'I could not reach the law library right now. Try again in a moment.';
       setMessages(previous => [
         ...previous,
         {
           id: createMessageId(),
           text: '',
           sender: 'bot',
-          fullText: 'I could not reach the law library right now. Try again in a moment.',
+          fullText: message,
           isTyping: true,
         },
       ]);
