@@ -779,7 +779,7 @@ export default function Chatbot() {
                 <div className="flex justify-center py-4">
                   <div className="max-w-xl rounded-3xl border border-white/10 bg-white/[0.07] px-5 py-4 text-center shadow-lg shadow-black/10 backdrop-blur-sm">
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                      <ThinkingOrb state="composing" size={20} theme="dark" aria-label="Composing response" />
+                      <ThinkingOrb state="connecting" size={20} theme="dark" aria-label="Composing response" />
                       <span>Robert Greene is contemplating...</span>
                     </div>
                     <div key={activeQuoteIndex} className="loading-quote-transition">
