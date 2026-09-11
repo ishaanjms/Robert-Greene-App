@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useRef, useState, type FormEvent} from 'react';
+import {ThinkingOrb} from 'thinking-orbs';
 import {BookOpen, Menu, Send} from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import {
@@ -365,7 +366,7 @@ export default function LawLibraryChatbot() {
                 <div className="flex justify-center py-4">
                   <div className="max-w-xl rounded-3xl border border-white/10 bg-white/[0.07] px-5 py-4 text-center shadow-lg shadow-black/10 backdrop-blur-sm">
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                      <BookOpen className="animate-pulse" size={16} />
+                      <ThinkingOrb state="searching" size={20} theme="dark" aria-label="Searching Greene Library" />
                       <span>Searching the Greene Library...</span>
                     </div>
                   </div>
