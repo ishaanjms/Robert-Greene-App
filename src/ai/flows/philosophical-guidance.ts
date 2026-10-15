@@ -17,14 +17,14 @@ import {z} from 'genkit';
 // Define a schema for individual messages, consistent with the frontend Message interface
 const MessageSchema = z.object({
   id: z.string(),
-  text: z.string(),
+  text: z.string().max(4_000),
   sender: z.enum(['user', 'bot']),
   isUser: z.boolean().optional().describe('True if the sender is the user. For template use.'),
   isBot: z.boolean().optional().describe('True if the sender is the bot. For template use.'),
 });
 
 const PhilosophicalGuidanceInputSchema = z.object({
-  situation: z.string().describe('A detailed description of the user\'s current situation related to power dynamics, strategy, seduction, mastery, or human behavior.'),
+  situation: z.string().trim().min(1).max(4_000).describe('A detailed description of the user\'s current situation related to power dynamics, strategy, seduction, mastery, or human behavior.'),
   tone: z.enum(['classic', 'modern']).default('classic').describe('The desired tone of the response. "classic" for metaphor-rich, philosophical language, or "modern" for concise, straightforward guidance.'),
   depthMode: z.enum(['surface', 'philosophical', 'tactical']).default('philosophical').describe('The desired depth of the advice. "surface" for quick tips, "philosophical" for rich insights, or "tactical" for detailed plans.'),
   model: z.enum([
@@ -34,7 +34,7 @@ const PhilosophicalGuidanceInputSchema = z.object({
     'huggingface-nvidia-nemotron-3-ultra-550b',
     'huggingface-meta-llama-3-1-405b-instruct',
   ]).default('gemini-3.6-flash').describe('The model provider and model selected by the user.'),
-  conversationHistory: z.array(MessageSchema).optional().describe('The ongoing dialogue history between the user and the chatbot. Used to maintain context and personalize responses.'),
+  conversationHistory: z.array(MessageSchema).max(12).optional().describe('The ongoing dialogue history between the user and the chatbot. Used to maintain context and personalize responses.'),
 });
 export type PhilosophicalGuidanceInput = z.infer<typeof PhilosophicalGuidanceInputSchema>;
 
@@ -323,7 +323,7 @@ const generateHuggingFaceClarifyingQuestion = async (
   const history = input.conversationHistory?.length
     ? input.conversationHistory
         .slice(-6)
-        .map(message => `${message.sender === 'user' ? 'User' : 'Robert Greene'}: ${message.text}`)
+        .map(message => `${message.sender === 'user' ? 'User' : 'Robert Greene'}: ${message.text.slice(0, 4_000)}`)
         .join('\n')
     : 'No prior context.';
 

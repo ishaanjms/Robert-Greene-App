@@ -1,21 +1,2 @@
-import {NextResponse} from 'next/server';
-import {getLawLibraryGuidance} from '@/ai/flows/law-library-guidance';
-
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const response = await getLawLibraryGuidance(body);
-
-    return NextResponse.json(response);
-  } catch (error) {
-    console.error('Greene Library API failed:', error);
-
-    return NextResponse.json(
-      {
-        answer: 'The Greene Library could not process that request. Please try again in a moment.',
-        sources: [],
-      },
-      {status: 500}
-    );
-  }
-}
+// Temporary compatibility endpoint for earlier clients. New code uses /api/greene-library.
+export {POST} from '../greene-library/route';

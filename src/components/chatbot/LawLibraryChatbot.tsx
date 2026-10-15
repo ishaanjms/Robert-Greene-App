@@ -28,6 +28,7 @@ import {Textarea} from '@/components/ui/textarea';
 import {useIsMobile} from '@/hooks/use-mobile';
 import {useToast} from '@/hooks/use-toast';
 import {cn} from '@/lib/utils';
+import {compactConversationForStorage, safelyStoreConversation} from '@/lib/conversation-storage';
 
 type LawLibraryResponse = {
   answer: string;
@@ -83,7 +84,7 @@ export default function LawLibraryChatbot() {
       try {
         const parsedHistory = JSON.parse(storedHistory);
         if (Array.isArray(parsedHistory) && parsedHistory.every(m => m.id && typeof m.text === 'string' && m.sender)) {
-          setMessages(parsedHistory.map(m => ({...m, isTyping: false})));
+          setMessages(compactConversationForStorage(parsedHistory).map(m => ({...m, isTyping: false})));
         }
       } catch (error) {
         console.error('Failed to parse law library history from localStorage', error);
@@ -100,7 +101,7 @@ export default function LawLibraryChatbot() {
   useEffect(() => {
     if (!isClientInitialized || messages.length === 0) return;
     const savableMessages = messages.map(({fullText, isTyping, ...message}) => message);
-    localStorage.setItem(GREENE_LIBRARY_HISTORY_STORAGE_KEY, JSON.stringify(savableMessages));
+    safelyStoreConversation(GREENE_LIBRARY_HISTORY_STORAGE_KEY, savableMessages);
   }, [messages, isClientInitialized]);
 
   useEffect(() => {

@@ -12,14 +12,14 @@ import type {ChatbotModel} from '@/components/chatbot/Chatbot';
 
 const MessageSchema = z.object({
   id: z.string(),
-  text: z.string(),
+  text: z.string().max(4_000),
   sender: z.enum(['user', 'bot']),
   isUser: z.boolean().optional(),
   isBot: z.boolean().optional(),
 });
 
 const LawLibraryGuidanceInputSchema = z.object({
-  question: z.string().describe('The user question or situation to analyze through the Greene Library.'),
+  question: z.string().trim().min(1).max(4_000).describe('The user question or situation to analyze through the Greene Library.'),
   model: z.enum([
     'gemini-3.6-flash',
     'huggingface-openai-gpt-oss-120b',
@@ -27,7 +27,7 @@ const LawLibraryGuidanceInputSchema = z.object({
     'huggingface-nvidia-nemotron-3-ultra-550b',
     'huggingface-meta-llama-3-1-405b-instruct',
   ]).default('gemini-3.6-flash'),
-  conversationHistory: z.array(MessageSchema).optional(),
+  conversationHistory: z.array(MessageSchema).max(12).optional(),
 });
 export type LawLibraryGuidanceInput = z.infer<typeof LawLibraryGuidanceInputSchema>;
 
@@ -534,7 +534,7 @@ const formatHistory = (history?: LawLibraryGuidanceInput['conversationHistory'])
   history?.length
     ? history
         .slice(-8)
-        .map(message => `${message.sender === 'user' ? 'User' : 'Greene Library'}: ${message.text}`)
+        .map(message => `${message.sender === 'user' ? 'User' : 'Greene Library'}: ${message.text.slice(0, 4_000)}`)
         .join('\n')
     : 'This is the beginning of the Greene Library conversation.';
 
@@ -544,7 +544,13 @@ const sanitizeAnswer = (answer: string, sources: string[]) => {
     return `I found the strongest reference in ${sources[0] ?? 'the Greene Library'}, but the model returned an empty answer. Try asking again with one concrete scene.`;
   }
 
-  return trimmed;
+  return trimmed.length > 12_000 ? `${trimmed.slice(0, 12_000).trimEnd()}...` : trimmed;
+};
+
+const groundedSourceTitles = (requestedSources: string[], retrievedSources: string[]) => {
+  const allowed = new Set(retrievedSources);
+  const cited = requestedSources.filter(source => allowed.has(source));
+  return cited.length ? cited : retrievedSources.slice(0, 1);
 };
 
 const buildSystemPrompt = (
@@ -637,7 +643,7 @@ const getHuggingFaceLawGuidance = async (
 
     return {
       answer: sanitizeAnswer(typeof rawAnswer === 'string' ? rawAnswer : '', sources),
-      sources,
+      sources: hasStrongMatch ? sources : sources.slice(0, 1),
     };
   } catch (error) {
     console.error('Hugging Face law-library flow failed:', error);
@@ -648,7 +654,7 @@ const getHuggingFaceLawGuidance = async (
   }
 };
 
-export async function getLawLibraryGuidance(input: LawLibraryGuidanceInput): Promise<LawLibraryGuidanceOutput> {
+export async function getLawLibraryGuidance(input: unknown): Promise<LawLibraryGuidanceOutput> {
   const parsedInput = LawLibraryGuidanceInputSchema.parse(input);
   const situation = analyzeSituation(parsedInput.question);
   const retrieved = retrieveLawContext(parsedInput.question, situation);
@@ -686,7 +692,7 @@ export async function getLawLibraryGuidance(input: LawLibraryGuidanceInput): Pro
 
     return {
       answer: sanitizeAnswer(output?.answer ?? '', sources),
-      sources,
+      sources: groundedSourceTitles(output?.sources ?? [], sources),
     };
   } catch (error) {
     console.error('Gemini law-library flow failed:', error);
